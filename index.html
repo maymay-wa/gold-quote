@@ -190,17 +190,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
   :root { --t-total: 60px; --t-fig: 40px; }
   body { padding-left: max(40px, env(safe-area-inset-left, 0px)); padding-right: max(40px, env(safe-area-inset-right, 0px)); }
   main { max-width: 1080px; padding-bottom: 64px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 80px; align-items: start; }
-  .top { grid-column: 1 / -1; padding-block: 20px; }
+  .top { grid-column: 1 / -1; padding-block: 14px; }
   .wordmark { font-size: 13px; }
   .wordmark br { display: none; }
-  .stl { position: sticky; top: 0; padding-block: 40px; gap: 24px; border-bottom: 0; }
+  .stl { padding-block: 32px; gap: 18px; border-bottom: 0; }
   .stl-figs { display: contents; }
   .stl .stage { order: -1; padding: 0; }
   .stl-figs .fig + .fig { border-left: 0; }
-  #view { width: min(100%, 52vh); height: auto; aspect-ratio: 1 / 1; border-radius: 24px; }
+  /* the preview gives up height first, so name, volume and the button always fit in the window */
+  #view { width: min(100%, clamp(150px, calc(100vh - 390px), 460px)); height: auto; aspect-ratio: 1 / 1; border-radius: 24px; }
   .stl .btn { justify-self: center; width: min(100%, 360px); }
-  .side .sec:first-child { padding-top: 40px; }
+  .side .sec:first-child { padding-top: 32px; }
   .side .sec { gap: 26px; padding-block: 36px; }
+}
+@media (min-width: 900px) and (min-height: 560px) {
+  .stl { position: sticky; top: 0; }
 }
 @media (hover: hover) {
   .btn-solid:hover { background: var(--ink); border-color: var(--ink); }
@@ -962,7 +966,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   });
 
   // ---------- start ----------
-  if (window.matchMedia && matchMedia("(min-width: 900px)").matches) $("breakdown").open = true;
   fillSettings();
   loadMesh(ringBand(), "Ring band, size 17", true);
   refreshPrices();
