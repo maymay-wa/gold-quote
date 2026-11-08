@@ -143,13 +143,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .line .amt { white-space: nowrap; }
 .line.total { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--line); font-weight: 500; }
 .price-detail { margin: 18px 0 0; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); }
-.units { display: flex; align-items: center; gap: 8px; margin-top: 28px; }
-.units-lbl { margin-right: auto; font-size: var(--t-sm); color: var(--muted); }
-.chip {
-  min-height: 40px; min-width: 56px; padding: 0 14px; border-radius: 999px;
-  border: 1px solid var(--frame); background: var(--bg); font: 500 var(--t-sm) var(--font);
-}
-.chip[aria-checked="true"] { background: var(--solid); color: var(--on-ink); border-color: var(--solid); }
 .more > summary {
   list-style: none; display: block; width: max-content; margin: 14px auto 0; min-height: 44px; padding: 0 8px; line-height: 44px;
   font-size: var(--t-sm); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--control); cursor: pointer;
@@ -163,17 +156,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .detail dt small { display: block; margin-top: 1px; font-size: var(--t-cap); color: var(--muted); overflow-wrap: anywhere; }
 .detail dd { margin: 0; text-align: right; white-space: nowrap; }
 
-.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
-.field { display: grid; gap: 2px; font-size: var(--t-sm); font-weight: 500; line-height: 1.35; min-width: 0; align-content: start; }
-.field small { font-size: var(--t-cap); font-weight: 400; color: var(--muted); margin-bottom: 6px; }
-.field input {
-  width: 100%; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--frame);
-  background: var(--bg); color: var(--ink); font: 400 var(--t-body) var(--font); font-variant-numeric: tabular-nums;
+.set-group { margin-top: 30px; }
+.set-group:first-child { margin-top: 4px; }
+.set-group h3 { margin: 0 0 6px; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.set-note { margin: -2px 0 4px; font-size: var(--t-cap); color: var(--muted); }
+.set-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 46px; align-items: center; column-gap: 10px; padding-block: 9px; border-bottom: 1px solid var(--line); cursor: text; }
+.set-row:last-of-type { border-bottom: 0; }
+.set-lbl { min-width: 0; font-size: var(--t-body); line-height: 1.3; }
+.set-lbl small { display: block; font-size: var(--t-cap); color: var(--muted); }
+.set-row input {
+  width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; background: var(--track);
+  color: var(--ink); font: 400 var(--t-body) var(--font); font-variant-numeric: tabular-nums; text-align: right;
 }
-.field input.bad { border-color: var(--warn); background: var(--warn-soft); }
-.fields h3 { grid-column: 1 / -1; margin: 12px 0 -4px; font-size: var(--t-sm); font-weight: 400; line-height: 1.3; color: var(--muted); }
-.field-err { grid-column: 1 / -1; margin: 0; font-size: var(--t-cap); color: var(--warn); }
-.reset { margin-top: 24px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--frame); background: none; font: 400 var(--t-sm) var(--font); }
+.set-row input:focus { outline: none; border-color: var(--frame); background: var(--bg); }
+.set-row input::placeholder { color: var(--muted); }
+.set-row input.bad { border-color: var(--warn); background: var(--warn-soft); }
+.unit { font-size: var(--t-sm); color: var(--muted); white-space: nowrap; }
+.field-err { margin: 0 0 8px; font-size: var(--t-cap); line-height: 1.45; color: var(--warn); }
+.seg-sm { margin-top: 10px; padding: 3px; border-radius: 12px; }
+.seg-sm button { min-height: 40px; border-radius: 9px; font-size: var(--t-sm); }
+.textbtn {
+  display: block; margin: 30px auto 0; min-height: 44px; padding: 0 8px; border: 0; background: none;
+  font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line);
+}
 
 .foot { padding-top: 24px; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); }
 .foot p { margin: 0 0 8px; max-width: 65ch; }
@@ -210,7 +215,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 @media (hover: hover) {
   .btn-solid:hover { background: var(--ink); border-color: var(--ink); }
-  .btn-outline:hover, .chip:not([aria-checked="true"]):hover, .reset:hover { border-color: var(--ink); }
+  .btn-outline:hover { border-color: var(--ink); }
+  .textbtn:hover { color: var(--ink); text-decoration-color: var(--ink); }
   .seg button:not([aria-checked="true"]):hover { background: #E7E6E3; }
   .fold > summary:hover::after { color: var(--ink); }
   .rates:hover { opacity: .7; }
@@ -285,33 +291,45 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <details class="fold" id="settings">
     <summary>Pricing settings</summary>
     <div class="fold-body">
-      <div class="fields">
-        <label class="field">Gold premium<small>% over spot</small><input id="sPremium" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">Labor<small>₪ per gram of piece</small><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">Printing fee<small>% of gold cost</small><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">VAT<small>% on the full total</small><input id="sVat" type="text" inputmode="decimal" autocomplete="off"></label>
+      <section class="set-group">
+        <h3>Charges</h3>
+        <label class="set-row"><span class="set-lbl">Gold premium</span><input id="sPremium" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+        <label class="set-row"><span class="set-lbl">Labor</span><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"><span class="unit">₪/g</span></label>
+        <label class="set-row"><span class="set-lbl">Printing fee<small>of gold and sprue</small></span><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+        <label class="set-row"><span class="set-lbl">VAT</span><input id="sVat" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+      </section>
+      <section class="set-group">
         <h3>Quote range</h3>
-        <label class="field">Below<small>% under the estimate</small><input id="sRangeLo" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">Above<small>% over the estimate</small><input id="sRangeHi" type="text" inputmode="decimal" autocomplete="off"></label>
-        <h3>Sprue, one per piece</h3>
-        <label class="field">Diameter<small>mm</small><input id="sSprueD" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">Length<small>mm, piece to tree</small><input id="sSprueL" type="text" inputmode="decimal" autocomplete="off"></label>
-        <h3>Density, g/cm³</h3>
-        <label class="field">9K<small>yellow ≈ 11.2</small><input id="sD9" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">14K<small>yellow ≈ 13.1</small><input id="sD14" type="text" inputmode="decimal" autocomplete="off"></label>
-        <label class="field">18K<small>yellow ≈ 15.5</small><input id="sD18" type="text" inputmode="decimal" autocomplete="off"></label>
-        <h3>Manual prices</h3>
-        <label class="field">Gold<small>$ per troy oz. Blank = live</small><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
-        <label class="field">USD → ILS<small>Blank = live</small><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
-        <p class="field-err" id="fieldErr" hidden></p>
-      </div>
-      <div class="units" id="units" role="radiogroup" aria-label="File units">
-        <span class="units-lbl">File units</span>
-        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
-        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
-        <button type="button" class="chip" role="radio" data-u="in">inch</button>
-      </div>
-      <button type="button" class="reset" id="reset">Reset to defaults</button>
+        <label class="set-row"><span class="set-lbl">Under estimate</span><input id="sRangeLo" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+        <label class="set-row"><span class="set-lbl">Over estimate</span><input id="sRangeHi" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+      </section>
+      <section class="set-group">
+        <h3>Sprue · one per piece</h3>
+        <label class="set-row"><span class="set-lbl">Diameter</span><input id="sSprueD" type="text" inputmode="decimal" autocomplete="off"><span class="unit">mm</span></label>
+        <label class="set-row"><span class="set-lbl">Length<small>piece to tree</small></span><input id="sSprueL" type="text" inputmode="decimal" autocomplete="off"><span class="unit">mm</span></label>
+      </section>
+      <section class="set-group">
+        <h3>Alloy density</h3>
+        <label class="set-row"><span class="set-lbl">9K</span><input id="sD9" type="text" inputmode="decimal" autocomplete="off"><span class="unit">g/cm³</span></label>
+        <label class="set-row"><span class="set-lbl">14K</span><input id="sD14" type="text" inputmode="decimal" autocomplete="off"><span class="unit">g/cm³</span></label>
+        <label class="set-row"><span class="set-lbl">18K</span><input id="sD18" type="text" inputmode="decimal" autocomplete="off"><span class="unit">g/cm³</span></label>
+      </section>
+      <section class="set-group">
+        <h3>Price override</h3>
+        <p class="set-note">Leave blank to use live prices.</p>
+        <label class="set-row"><span class="set-lbl">Gold</span><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit">$/oz</span></label>
+        <label class="set-row"><span class="set-lbl">USD → ILS</span><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit">₪</span></label>
+      </section>
+      <section class="set-group">
+        <h3>STL file units</h3>
+        <div class="seg seg-sm" id="units" role="radiogroup" aria-label="File units">
+          <button type="button" role="radio" data-u="mm">mm</button>
+          <button type="button" role="radio" data-u="cm">cm</button>
+          <button type="button" role="radio" data-u="in">inch</button>
+        </div>
+      </section>
+      <p class="field-err" id="fieldErr" hidden></p>
+      <button type="button" class="textbtn" id="reset">Reset to defaults</button>
     </div>
   </details>
 
@@ -778,7 +796,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     }
 
     // toggles
-    document.querySelectorAll("#units .chip").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
+    document.querySelectorAll("#units button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
     document.querySelectorAll("#karats button").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
     $("lVat").textContent = "VAT " + settings.vatPct + "%";
 
@@ -878,11 +896,12 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
   const RANGES = {
     sPremium: [0, 50, "Gold premium", "%"], sLabor: [0, 1000, "Labor", " ₪/g"], sPrint: [0, 50, "Printing fee", "%"],
-    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Range below", "%"], sRangeHi: [0, 30, "Range above", "%"], sSprueD: [0.5, 8, "Sprue diameter", " mm"], sSprueL: [1, 30, "Sprue length", " mm"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
+    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Under estimate", "%"], sRangeHi: [0, 30, "Over estimate", "%"], sSprueD: [0.5, 8, "Sprue diameter", " mm"], sSprueL: [1, 30, "Sprue length", " mm"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
     sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
   };
   function fieldError(input, msg) {
     const err = $("fieldErr");
+    if (msg) input.closest(".set-row").after(err); // show the message right under the field she's editing
     err.hidden = !msg;
     err.textContent = msg || "";
     input.classList.toggle("bad", !!msg);
