@@ -133,10 +133,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* Folded sections */
 .fold { border-bottom: 1px solid var(--line); }
-.fold summary { list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 64px; font-size: var(--t-body); cursor: pointer; }
-.fold summary::-webkit-details-marker { display: none; }
-.fold summary::after { content: "+"; font-size: 24px; font-weight: 300; line-height: 1; color: var(--muted); }
-.fold[open] summary::after { content: "−"; }
+.fold > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 64px; font-size: var(--t-body); cursor: pointer; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: "+"; font-size: 24px; font-weight: 300; line-height: 1; color: var(--muted); }
+.fold[open] > summary::after { content: "−"; }
 .fold-body { padding-bottom: 28px; }
 
 .line { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 7px; font-size: var(--t-body); line-height: 1.35; }
@@ -150,11 +150,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--frame); background: var(--bg); font: 500 var(--t-sm) var(--font);
 }
 .chip[aria-checked="true"] { background: var(--solid); color: var(--on-ink); border-color: var(--solid); }
-.linkbtn {
-  display: block; margin: 20px auto 0; min-height: 44px; padding: 0 8px; border: 0; background: none;
-  font: 400 var(--t-sm) var(--font); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--control);
+.more > summary {
+  list-style: none; display: block; width: max-content; margin: 14px auto 0; min-height: 44px; padding: 0 8px; line-height: 44px;
+  font-size: var(--t-sm); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--control); cursor: pointer;
 }
-.linkbtn:disabled { color: var(--muted); cursor: default; }
+.more > summary::-webkit-details-marker { display: none; }
+.more .when-open, .more[open] .when-closed { display: none; }
+.more[open] .when-open { display: inline; }
+.detail { margin: 10px 0 0; display: grid; gap: 12px; font-size: var(--t-sm); line-height: 1.35; }
+.detail > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.detail dt { min-width: 0; }
+.detail dt small { display: block; margin-top: 1px; font-size: var(--t-cap); color: var(--muted); overflow-wrap: anywhere; }
+.detail dd { margin: 0; text-align: right; white-space: nowrap; }
 
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
 .field { display: grid; gap: 2px; font-size: var(--t-sm); font-weight: 500; line-height: 1.35; min-width: 0; align-content: start; }
@@ -205,9 +212,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .btn-solid:hover { background: var(--ink); border-color: var(--ink); }
   .btn-outline:hover, .chip:not([aria-checked="true"]):hover, .reset:hover { border-color: var(--ink); }
   .seg button:not([aria-checked="true"]):hover { background: #E7E6E3; }
-  .fold summary:hover::after { color: var(--ink); }
+  .fold > summary:hover::after { color: var(--ink); }
   .rates:hover { opacity: .7; }
-  .linkbtn:hover { text-decoration-color: var(--ink); }
+  .more > summary:hover { text-decoration-color: var(--ink); }
 }
 </style>
 </head>
@@ -268,7 +275,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
       <div class="line total"><span>Estimate</span><span class="amt" id="qTotal2">—</span></div>
       <p class="price-detail" id="priceDetail">Loading prices…</p>
-      <button class="linkbtn" id="copyBd" type="button">Copy full breakdown for me</button>
+      <details class="more">
+        <summary><span class="when-closed">More details</span><span class="when-open">Fewer details</span></summary>
+        <dl class="detail" id="detail"></dl>
+      </details>
     </div>
   </details>
 
@@ -777,13 +787,12 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("pick").className = "btn " + (real ? "btn-outline" : "btn-solid");
     $("pickText").textContent = real ? "Choose another file" : finePointer ? "Choose or drop an STL file" : "Choose STL file";
     $("exTag").hidden = !mesh || !mesh.example;
-    const copyBd = $("copyBd");
-    copyBd.disabled = true;
     if (!mesh) {
       $("volSub").textContent = "volume";
       setText(["dims", "vol", "weight", "fine", "qGold", "qSprue", "qLabor", "qPrint", "qVat", "qTotal2"], "—");
       $("qUsd").textContent = "";
       setTotal("—");
+      $("detail").replaceChildren();
       return;
     }
     const st = mesh.stats, u = settings.unit;
@@ -819,6 +828,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       setTotal("—");
       $("qLabor").textContent = ils0(weight * settings.labor);
       $("qUsd").textContent = "Waiting for the gold price";
+      $("detail").replaceChildren();
       return;
     }
     const q = quote({ ...base, karat: k, density });
@@ -828,10 +838,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     setTotal(fmt0.format(rg.lo) + '<span class="dash">–</span>' + fmt0.format(rg.hi));
     $("qTotal").classList.toggle("long", rg.hi >= 10000);
     $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
+    showDetails(q, rg, { spotG, gOver, fOver, fx });
     const shown = wholeShekels([q.gold, q.sprue, q.labor, q.printing, q.vat], q.total);
     ["qGold", "qSprue", "qLabor", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
     $("qTotal2").textContent = ils0(shown.total);
-    copyBd.disabled = !!mesh.example;
   }
 
   // ---------- controls ----------
@@ -913,42 +923,33 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     saveSettings(); fillSettings(); fieldError($("sVat"), ""); render();
   });
 
-  // ---------- copy breakdown ----------
-  const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
-  // Her own record: every line and the prices used.
-  function breakdownText() {
-    const q = mesh.quote, k = settings.karat;
-    return [
-      "Quote breakdown · " + k + "K (" + Math.round(FINENESS[k] * 1000) + ")",
-      mesh.name,
-      "Volume " + fmt0.format(q.weight / settings.dens[k] * 1000) + " mm³ · weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
-      "",
-      "Fine gold: " + ils(q.gold) + " (" + grams(q.fine) + " × " + ils(q.goldIlsG) + ")",
-      ...(q.sprue ? ["Sprue: " + ils(q.sprue) + " (" + grams(q.sprueWeight) + ", " + grams(q.sprueFine) + " pure)"] : []),
-      "Labor: " + ils(q.labor),
-      "Printing: " + ils(q.printing),
-      "Before VAT: " + ils(q.subtotal),
-      "VAT " + settings.vatPct + "%: " + ils(q.vat),
-      "Estimate: " + ils(q.total) + " (≈ " + usd(q.totalUsd) + ")",
-      "Quote range: " + ils0(mesh.range.lo) + " – " + ils0(mesh.range.hi),
-      "",
-      "Gold " + usd(goldOz()) + "/oz + " + settings.premiumPct + "% · $1 = ₪" + usdIls().toFixed(3) + " · " + today(),
-    ].join("\n");
+  // ---------- more details ----------
+  // Every number behind the quote, exact to the agora.
+  function showDetails(q, rg, { spotG, gOver, fOver, fx }) {
+    const k = settings.karat, rows = [];
+    const add = (label, note, value) => rows.push([label, note, value]);
+    add("Gold", grams(q.fine) + " pure × " + ils(q.goldIlsG) + "/g", ils(q.gold));
+    add("Sprue", grams(q.sprueWeight) + " " + k + "K (" + grams(q.sprueFine) + " pure), " + fmt1.format(settings.sprueD) + " × " + fmt1.format(settings.sprueL) + " mm", ils(q.sprue));
+    add("Labor", grams(q.weight) + " × " + ils(settings.labor) + "/g", ils(q.labor));
+    add("Printing", settings.printPct + "% of " + ils(q.gold + q.sprue) + " gold and sprue", ils(q.printing));
+    add("Before VAT", "", ils(q.subtotal));
+    add("VAT", settings.vatPct + "% of " + ils(q.subtotal), ils(q.vat));
+    add("Estimate", "exact", ils(q.total));
+    add("Quote range", settings.rangeLo + "% under to " + settings.rangeHi + "% over, rounded to ₪" + rg.step, ils0(rg.lo) + " – " + ils0(rg.hi));
+    add("Gold price", "spot " + usd(goldOz()) + "/oz" + (gOver ? " (manual)" : prices.goldAt ? ", " + ago(prices.goldAt) : "") + " = " + ils(spotG) + "/g pure, + " + settings.premiumPct + "%", ils(q.goldIlsG) + "/g");
+    add("Exchange rate", fOver ? "manual" : prices.fxSrc === "live" ? "live, Coinbase" : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : "daily rate, " + day(prices.fxAt), "$1 = ₪" + fx.toFixed(3));
+    const e = mesh.edges;
+    add("Mesh", mesh.stats.tris.toLocaleString("en-US") + " triangles", !e ? "Checking…" : e.open || e.nonManifold ? "Has holes" : "Watertight");
+    const dl = $("detail");
+    dl.replaceChildren(...rows.map(([label, note, value]) => {
+      const row = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd");
+      dt.textContent = label;
+      if (note) { const sm = document.createElement("small"); sm.textContent = note; dt.append(sm); }
+      dd.textContent = value;
+      row.append(dt, dd);
+      return row;
+    }));
   }
-  async function copyText(text, label, idle) {
-    try {
-      await navigator.clipboard.writeText(text);
-      label.textContent = "Copied";
-    } catch {
-      label.textContent = "Couldn't copy";
-    }
-    setTimeout(() => (label.textContent = idle), 1800);
-  }
-  $("copyBd").addEventListener("click", () => {
-    if (!mesh || !mesh.quote || mesh.example) return;
-    copyText(breakdownText(), $("copyBd"), "Copy full breakdown for me");
-  });
 
   // ---------- start ----------
   fillSettings();
