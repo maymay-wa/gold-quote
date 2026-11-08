@@ -76,9 +76,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sec { display: grid; gap: 14px; padding-block: 18px; border-bottom: 1px solid var(--line); text-align: center; }
 .label { margin: 0; font-size: 15px; font-weight: 400; color: var(--muted); }
 
-.piece { display: grid; justify-items: center; gap: 8px; }
 #view {
-  display: block; width: 80px; height: 80px; border-radius: 12px;
+  display: block; width: 120px; height: 120px; border-radius: 14px;
   background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 80%);
   touch-action: pan-y; cursor: grab;
 }
@@ -91,7 +90,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .piece-meta { font-size: 14px; color: var(--muted); }
 
 .figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.fig { display: grid; justify-items: center; gap: 0; min-width: 0; padding-inline: 8px; }
+.fig { display: grid; justify-items: center; align-content: center; gap: 0; min-width: 0; padding-inline: 8px; }
 .figs .fig + .fig { border-left: 1px solid var(--line); }
 .fig b { font-size: 28px; font-weight: 300; letter-spacing: -.02em; line-height: 1.15; }
 .fig b small { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 3px; }
@@ -188,14 +187,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   </header>
 
   <section class="sec" id="l-stl" aria-label="STL file">
-    <div class="piece">
-      <canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas>
-      <div class="piece-info">
-        <span class="fname" id="fname">Ring band, size 17</span>
-        <span class="piece-meta"><span id="dims">—</span><span id="exTag"> · example</span></span>
-      </div>
+    <div class="piece-info">
+      <span class="fname" id="fname">Ring band, size 17</span>
+      <span class="piece-meta"><span id="dims">—</span><span id="exTag"> · example</span></span>
     </div>
-    <div class="fig"><b id="vol">—</b><span id="volSub">volume</span></div>
+    <div class="figs">
+      <div class="fig"><canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas></div>
+      <div class="fig"><b id="vol">—</b><span id="volSub">volume</span></div>
+    </div>
     <p class="warn" id="meshWarn" hidden></p>
     <label class="btn btn-solid" id="pick">
       <input type="file" id="stl" class="vh">
