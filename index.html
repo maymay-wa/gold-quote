@@ -187,8 +187,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     </button>
   </header>
 
-  <section class="sec" aria-labelledby="l-stl">
-    <h2 class="label" id="l-stl">STL file</h2>
+  <section class="sec" id="l-stl" aria-label="STL file">
     <div class="piece">
       <canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas>
       <div class="piece-info">
@@ -731,8 +730,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const mm = st.size.map((d) => d * UNIT_TO_MM[u]);
     $("dims").textContent = mm.map((d) => fmt1.format(d)).join(" × ") + " mm";
     const volumeCm3 = st.volume * UNIT_TO_CM3[u];
-    $("vol").innerHTML = fig(fmt3.format(volumeCm3), "cm³");
-    $("volSub").textContent = "volume · " + fmt0.format(volumeCm3 * 1000) + " mm³";
+    $("vol").innerHTML = fig(fmt0.format(volumeCm3 * 1000), "mm³");
+    $("volSub").textContent = "volume";
     $("tris").textContent = mesh.edges ? (mesh.edges.open || mesh.edges.nonManifold ? "Has holes" : "Watertight") : "Checking…";
 
     const warns = [];
@@ -868,7 +867,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     return [
       "Quote breakdown · " + k + "K (" + Math.round(FINENESS[k] * 1000) + ")",
       mesh.name,
-      "Volume " + fmt3.format(q.weight / settings.dens[k]) + " cm³ · weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
+      "Volume " + fmt0.format(q.weight / settings.dens[k] * 1000) + " mm³ · weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
       "",
       "Fine gold: " + ils(q.gold) + " (" + grams(q.fine) + " × " + ils(q.goldIlsG) + ")",
       "Labor: " + ils(q.labor),
