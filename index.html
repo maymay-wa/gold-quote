@@ -84,7 +84,14 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
 .dot.live { background: var(--ok); }
 .dot.stale { background: var(--warn); }
 
-/* Piece */
+/* Steps */
+.step-h { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); text-transform: none; }
+.step-n {
+  flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--gold-soft); color: var(--gold-ink); font-size: 13px; font-weight: 800;
+}
+
+/* 1 · STL */
 .pick {
   position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 54px; padding: 0 16px; border-radius: 14px; border: 1.5px solid var(--gold);
@@ -95,57 +102,42 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
 .pick:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
 .pick.drag { outline: 2px dashed var(--gold); outline-offset: 3px; }
 .pick-hint { margin: 6px 0 0; text-align: center; font-size: 12.5px; color: var(--muted); }
-
-.piece-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 14px; }
+.piece { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: 12px; }
 #view {
-  display: block; width: 128px; height: 128px; border-radius: 14px;
+  display: block; width: 88px; height: 88px; border-radius: 12px;
   background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 78%);
   touch-action: pan-y; cursor: grab;
 }
 #view:active { cursor: grabbing; }
-.piece-info { display: grid; gap: 8px; min-width: 0; }
-.name-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.piece-info { display: grid; gap: 3px; min-width: 0; justify-items: start; }
 .fname {
-  min-width: 0; font-weight: 700; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere;
+  min-width: 0; max-width: 100%; font-weight: 700; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.piece-meta { font-size: 14px; color: var(--muted); }
 .tag {
-  flex: none; margin-top: 1px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
   padding: 3px 7px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-ink);
 }
-.mini { margin: 0; display: grid; gap: 3px; }
-.mini div { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
-.mini dt { color: var(--muted); }
-.mini dd { margin: 0; font-weight: 600; text-align: right; }
 .warn { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
-.units { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-.units-lbl { margin-right: auto; font-size: 14px; color: var(--muted); }
-.chip {
-  min-height: 40px; min-width: 50px; padding: 0 12px; border-radius: 999px;
-  border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 14px;
-}
-.chip[aria-checked="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 
-/* Quote: the one emphasized card */
-.quote { display: grid; gap: 14px; border: 1.5px solid var(--gold); box-shadow: 0 10px 28px -18px rgba(148, 104, 15, .55); }
+/* 2 · Gold */
 .karats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .karat {
-  display: grid; place-items: center; gap: 1px; min-height: 66px; padding: 8px 4px;
+  display: grid; place-items: center; gap: 0; min-height: 62px; padding: 8px 4px;
   border-radius: 14px; border: 1.5px solid var(--line-strong); background: var(--surface);
 }
-.karat b { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
-.karat .kp { font-size: 13px; color: var(--muted); }
+.karat b { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.karat span { font-size: 12px; color: var(--muted); letter-spacing: .06em; }
 .karat[aria-checked="true"] { background: var(--gold); border-color: var(--gold); color: var(--on-gold); }
-.karat[aria-checked="true"] .kp { color: var(--on-gold); opacity: .9; }
-.total-lbl { font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
-.total-num { font-size: 46px; font-weight: 800; letter-spacing: -.035em; line-height: 1.05; margin-top: 2px; }
-.total-usd { font-size: 15px; color: var(--muted); margin-top: 2px; }
-.fresh { display: flex; align-items: center; gap: 7px; margin-top: 6px; font-size: 13.5px; color: var(--muted); }
-.fresh.stale { color: var(--warn); }
-.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.stat { display: grid; padding: 10px 12px; border-radius: 12px; background: var(--bg); min-width: 0; }
-.stat b { font-size: 19px; font-weight: 700; }
-.stat small { font-size: 12.5px; color: var(--muted); }
+.karat[aria-checked="true"] span { color: var(--on-gold); opacity: .85; }
+
+/* 3 · Price */
+.price-card { display: grid; gap: 14px; border: 1.5px solid var(--gold); box-shadow: 0 10px 28px -18px rgba(148, 104, 15, .55); }
+.price-card .step-h { margin: 0; }
+.total-num { font-size: 52px; font-weight: 800; letter-spacing: -.035em; line-height: 1; }
+.total-sub { margin-top: 8px; font-size: 15px; color: var(--muted); }
+.fresh { margin: 0; font-size: 14px; color: var(--warn); }
 .quote-note { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--gold-soft); color: var(--gold-ink); font-size: 14px; }
 .share {
   display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; border-radius: 14px;
@@ -153,13 +145,13 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
 }
 .share svg { width: 20px; height: 20px; }
 .share:disabled { opacity: .4; cursor: default; }
-.copy-bd {
-  justify-self: center; min-height: 44px; padding: 0 12px; border: 0; background: none;
-  color: var(--gold-ink); font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 3px;
-}
-.copy-bd:disabled { opacity: .4; cursor: default; }
 
-/* Breakdown */
+/* Breakdown (collapsed by default) */
+.bd-body { margin-top: 14px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 4px; }
+.stat { display: grid; padding: 10px 12px; border-radius: 12px; background: var(--bg); min-width: 0; }
+.stat b { font-size: 18px; font-weight: 700; }
+.stat small { font-size: 12.5px; color: var(--muted); }
 .line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 10px; border-bottom: 1px solid var(--line); font-size: 15.5px; }
 .line > :first-child { min-width: 0; }
 .line small { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
@@ -167,7 +159,24 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
 .line.subtotal { font-weight: 700; }
 .line.grand { border-bottom: 0; font-weight: 800; font-size: 17px; }
 .line.grand .amt { font-weight: 800; }
-.price-detail { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--muted); line-height: 1.5; }
+.price-detail { margin: 6px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--muted); line-height: 1.5; }
+.bd-h { margin: 18px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mini { margin: 0; display: grid; gap: 4px; }
+.mini div { display: flex; justify-content: space-between; gap: 8px; font-size: 14.5px; }
+.mini dt { color: var(--muted); }
+.mini dd { margin: 0; font-weight: 600; text-align: right; }
+.units { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.units-lbl { margin-right: auto; font-size: 14.5px; color: var(--muted); }
+.chip {
+  min-height: 40px; min-width: 50px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 14px;
+}
+.chip[aria-checked="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.copy-bd {
+  display: block; margin: 14px auto 0; min-height: 44px; padding: 0 12px; border: 0; background: none;
+  color: var(--gold-ink); font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 3px;
+}
+.copy-bd:disabled { opacity: .4; cursor: default; }
 
 /* Settings */
 .settings summary {
@@ -194,9 +203,7 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
 .foot a { color: inherit; }
 
 @media (max-width: 360px) {
-  .piece-row { grid-template-columns: 104px minmax(0, 1fr); }
-  #view { width: 104px; height: 104px; }
-  .total-num { font-size: 40px; }
+  .total-num { font-size: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .price-pill.spin .pill-icon { animation: none; } }
 </style>
@@ -215,67 +222,76 @@ h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white
     </button>
   </header>
 
-  <section class="card" aria-label="Piece">
+  <section class="card" aria-labelledby="h-stl">
+    <h2 class="step-h" id="h-stl"><span class="step-n">1</span>Choose the STL</h2>
     <label class="pick" id="pick">
       <input type="file" id="stl" class="vh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="M9 15l3-3 3 3"/></svg>
       <span id="pickText">Choose STL file</span>
     </label>
     <p class="pick-hint">The file stays on this phone. Nothing is uploaded.</p>
-    <div class="piece-row">
-      <canvas id="view" aria-label="3D preview. Drag to rotate."></canvas>
+    <div class="piece">
+      <canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas>
       <div class="piece-info">
-        <div class="name-row"><span class="fname" id="fname">Ring band, size 17</span><span class="tag" id="exTag">Example</span></div>
-        <dl class="mini">
-          <div><dt>Size</dt><dd id="dims">—</dd></div>
-          <div><dt>Volume</dt><dd id="vol">—</dd></div>
-          <div><dt>Mesh</dt><dd id="tris">—</dd></div>
-        </dl>
+        <span class="tag" id="exTag">Example</span>
+        <span class="fname" id="fname">Ring band, size 17</span>
+        <span class="piece-meta" id="dims">—</span>
       </div>
     </div>
     <p class="warn" id="meshWarn" hidden></p>
-    <div class="units" id="units" role="radiogroup" aria-label="File units">
-      <span class="units-lbl">File units</span>
-      <button type="button" class="chip" role="radio" data-u="mm">mm</button>
-      <button type="button" class="chip" role="radio" data-u="cm">cm</button>
-      <button type="button" class="chip" role="radio" data-u="in">inch</button>
+  </section>
+
+  <section class="card" aria-labelledby="h-gold">
+    <h2 class="step-h" id="h-gold"><span class="step-n">2</span>Choose the gold</h2>
+    <div class="karats" id="karats" role="radiogroup" aria-label="Gold type">
+      <button type="button" class="karat" role="radio" data-k="9"><b>9K</b><span>375</span></button>
+      <button type="button" class="karat" role="radio" data-k="14"><b>14K</b><span>585</span></button>
+      <button type="button" class="karat" role="radio" data-k="18"><b>18K</b><span>750</span></button>
     </div>
   </section>
 
-  <section class="card quote" aria-label="Quote">
-    <div class="karats" id="karats" role="radiogroup" aria-label="Gold alloy">
-      <button type="button" class="karat" role="radio" data-k="9"><b>9K</b><span class="kp" id="kp9">375</span></button>
-      <button type="button" class="karat" role="radio" data-k="14"><b>14K</b><span class="kp" id="kp14">585</span></button>
-      <button type="button" class="karat" role="radio" data-k="18"><b>18K</b><span class="kp" id="kp18">750</span></button>
-    </div>
+  <section class="card price-card" aria-labelledby="h-price">
+    <h2 class="step-h" id="h-price"><span class="step-n">3</span>Price</h2>
     <div>
-      <div class="total-lbl">Total incl. VAT</div>
       <div class="total-num" id="qTotal">—</div>
-      <div class="total-usd" id="qUsd"></div>
-      <div class="fresh" id="qFresh"></div>
+      <div class="total-sub" id="qUsd"></div>
     </div>
-    <div class="stats">
-      <div class="stat"><b id="weight">—</b><small id="weightSub">piece weight</small></div>
-      <div class="stat"><b id="fine">—</b><small id="fineSub">pure gold</small></div>
-    </div>
+    <p class="fresh" id="qFresh" hidden></p>
     <p class="quote-note" id="quoteNote" hidden></p>
     <button class="share" id="share" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
       <span id="shareText">Send quote to customer</span>
     </button>
-    <button class="copy-bd" id="copyBd" type="button">Copy full breakdown for me</button>
   </section>
 
-  <section class="card" aria-label="Price breakdown">
-    <h2>How the price adds up</h2>
-    <div class="line"><span>Gold<small id="nGold">—</small></span><span class="amt" id="qGold">—</span></div>
-    <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="amt" id="qLabor">—</span></div>
-    <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
-    <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
-    <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
-    <div class="line grand"><span>Total</span><span class="amt" id="qTotal2">—</span></div>
-    <p class="price-detail" id="priceDetail">Loading prices…</p>
-  </section>
+  <details class="card settings" id="breakdown">
+    <summary>Price breakdown</summary>
+    <div class="bd-body">
+      <div class="stats">
+        <div class="stat"><b id="weight">—</b><small id="weightSub">piece weight</small></div>
+        <div class="stat"><b id="fine">—</b><small id="fineSub">pure gold</small></div>
+      </div>
+      <div class="line"><span>Gold<small id="nGold">—</small></span><span class="amt" id="qGold">—</span></div>
+      <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="amt" id="qLabor">—</span></div>
+      <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
+      <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
+      <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
+      <div class="line grand"><span>Total</span><span class="amt" id="qTotal2">—</span></div>
+      <p class="price-detail" id="priceDetail">Loading prices…</p>
+      <h3 class="bd-h">Model</h3>
+      <dl class="mini">
+        <div><dt>Volume</dt><dd id="vol">—</dd></div>
+        <div><dt>Mesh</dt><dd id="tris">—</dd></div>
+      </dl>
+      <div class="units" id="units" role="radiogroup" aria-label="File units">
+        <span class="units-lbl">File units</span>
+        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
+        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
+        <button type="button" class="chip" role="radio" data-u="in">inch</button>
+      </div>
+      <button class="copy-bd" id="copyBd" type="button">Copy full breakdown for me</button>
+    </div>
+  </details>
 
   <details class="card settings" id="settings">
     <summary>Pricing settings</summary>
@@ -712,11 +728,12 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       freshEl.textContent = loading ? "" : "No gold price yet. Tap the price at the top to retry.";
     } else if (isFresh || loading) {
       freshEl.className = "fresh";
-      freshEl.textContent = "Gold price as of " + clock(prices.checkedAt) + ". Updates every 10 min.";
+      freshEl.textContent = "";
     } else {
       freshEl.className = "fresh stale";
       freshEl.textContent = "Gold price is from " + ago(prices.checkedAt || prices.goldAt) + ". Tap the price at the top to refresh.";
     }
+    freshEl.hidden = !freshEl.textContent;
     $("rateDot").className = "dot" + (kind ? " " + kind : "");
     $("pillPrice").textContent = chargedG ? ils0(chargedG) : "No price";
     $("pillSub").textContent = sub;
@@ -744,7 +761,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     if (!mesh) {
       setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal", "qTotal2"], "—");
       setText(["nGold", "nLabor", "nPrint", "qUsd"], "");
-      [9, 14, 18].forEach((k) => ($("kp" + k).textContent = Math.round(FINENESS[k] * 1000)));
       $("quoteNote").hidden = true;
       share.disabled = true;
       return;
@@ -758,8 +774,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
 
     const warns = [];
     const maxMm = Math.max(...mm);
-    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units below.");
-    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units below.");
+    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units at the bottom of Price breakdown.");
+    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units at the bottom of Price breakdown.");
     if (mesh.edges && (mesh.edges.open || mesh.edges.nonManifold)) {
       const parts = [];
       if (mesh.edges.open) parts.push(mesh.edges.open.toLocaleString("en-US") + " open edges");
@@ -777,7 +793,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
 
     const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx };
     if (!gOz || !fx) {
-      [9, 14, 18].forEach((kk) => ($("kp" + kk).textContent = Math.round(FINENESS[kk] * 1000)));
       setText(["qGold", "qPrint", "qSub", "qVat", "qTotal", "qTotal2"], "—");
       $("qLabor").textContent = ils(round2(weight * settings.labor));
       $("nGold").textContent = grams(fine) + " pure gold, waiting for price";
@@ -788,15 +803,11 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       share.disabled = true;
       return;
     }
-    [9, 14, 18].forEach((kk) => {
-      const qq = quote({ ...base, karat: kk, density: settings.dens[kk] });
-      $("kp" + kk).textContent = ils0(qq.total);
-    });
     const q = quote({ ...base, karat: k, density });
     mesh.quote = q;
     $("qTotal").textContent = ils0(q.total);
     $("qTotal2").textContent = ils(q.total);
-    $("qUsd").textContent = "≈ " + usd(q.totalUsd);
+    $("qUsd").textContent = "Incl. " + settings.vatPct + "% VAT · " + fmt1.format(q.weight) + " g in " + k + "K · ≈ " + usd(q.totalUsd);
     $("qGold").textContent = ils(q.gold);
     $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
     $("qLabor").textContent = ils(q.labor);
