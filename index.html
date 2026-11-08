@@ -292,6 +292,7 @@ h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em;
   <details class="card settings" id="settings">
     <summary>Pricing settings</summary>
     <div class="fields">
+      <label class="field">Gold premium<small>% over spot</small><input id="sPremium" type="text" inputmode="decimal" autocomplete="off"></label>
       <label class="field">Labor<small>₪ per gram of piece</small><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"></label>
       <label class="field">Printing fee<small>% of gold cost</small><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"></label>
       <label class="field">VAT<small>% on the full total</small><input id="sVat" type="text" inputmode="decimal" autocomplete="off"></label>
@@ -307,7 +308,7 @@ h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em;
   </details>
 
   <footer class="foot">
-    <p>Gold is charged on fine gold content only, at spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a>. The exchange rate comes from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a>, or the ECB rate if that's unavailable.</p>
+    <p>Gold is charged on fine gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The 12% default matches what Goldtree was charging over spot on 8 Nov 2026. The exchange rate comes from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a>, or the ECB rate if that's unavailable.</p>
     <p>Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.</p>
   </footer>
 </main>
@@ -318,7 +319,7 @@ const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { labor: 35, printPct: 5, vatPct: 18, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -430,10 +431,11 @@ function ringBand(inner = 17, width = 3, thick = 1.6, seg = 128) {
 const round2 = (v) => Math.round(v * 100) / 100;
 
 // Each line is rounded to agorot so the shown lines add up exactly to the total.
-function quote({ volumeCm3, karat, density, labor, printPct, vatPct, goldUsdOz, usdIls }) {
+// goldIlsG is the charged price per gram of fine gold: spot plus the premium.
+function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls }) {
   const weight = volumeCm3 * density;
   const fine = weight * FINENESS[karat];
-  const goldIlsG = (goldUsdOz / TROY_OZ_G) * usdIls;
+  const goldIlsG = (goldUsdOz / TROY_OZ_G) * usdIls * (1 + premiumPct / 100);
   const gold = round2(fine * goldIlsG);
   const laborCost = round2(weight * labor);
   const printing = round2(gold * printPct / 100);
@@ -764,10 +766,10 @@ function quote({ volumeCm3, karat, density, labor, printPct, vatPct, goldUsdOz, 
       share.disabled = true;
       return;
     }
-    const q = quote({ volumeCm3, karat: k, density, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx });
+    const q = quote({ volumeCm3, karat: k, density, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx });
     mesh.quote = q;
     $("qGold").textContent = ils(q.gold);
-    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
+    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG) + (settings.premiumPct ? " (spot +" + settings.premiumPct + "%)" : " (spot)");
     $("qLabor").textContent = ils(q.labor);
     $("nLabor").textContent = grams(q.weight) + " × " + ils(settings.labor);
     $("qPrint").textContent = ils(q.printing);
@@ -795,6 +797,7 @@ function quote({ volumeCm3, karat, density, labor, printPct, vatPct, goldUsdOz, 
   $("refresh").addEventListener("click", refreshPrices);
 
   const numFields = [
+    ["sPremium", () => settings.premiumPct, (v) => (settings.premiumPct = v)],
     ["sLabor", () => settings.labor, (v) => (settings.labor = v)],
     ["sPrint", () => settings.printPct, (v) => (settings.printPct = v)],
     ["sVat", () => settings.vatPct, (v) => (settings.vatPct = v)],
@@ -834,7 +837,7 @@ function quote({ volumeCm3, karat, density, labor, printPct, vatPct, goldUsdOz, 
       mesh.example ? "Example ring band" : mesh.name,
       "Weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
       "",
-      "Fine gold: " + ils(q.gold),
+      "Fine gold: " + ils(q.gold) + " (" + grams(q.fine) + " × " + ils(q.goldIlsG) + ")",
       "Labor: " + ils(q.labor),
       "Printing: " + ils(q.printing),
       "Before VAT: " + ils(q.subtotal),
