@@ -142,7 +142,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .line { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 7px; font-size: var(--t-body); line-height: 1.35; }
 .line .amt { white-space: nowrap; }
 .line.total { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--line); font-weight: 500; }
-.price-detail { margin: 18px 0 0; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); }
+.price-detail { margin: 18px 0 0; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); text-align: center; white-space: pre-line; }
 .more > summary {
   list-style: none; display: block; width: max-content; margin: 14px auto 0; min-height: 44px; padding: 0 8px; line-height: 44px;
   font-size: var(--t-sm); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--control); cursor: pointer;
@@ -150,15 +150,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .more > summary::-webkit-details-marker { display: none; }
 .more .when-open, .more[open] .when-closed { display: none; }
 .more[open] .when-open { display: inline; }
-.detail { margin: 10px 0 0; display: grid; gap: 12px; font-size: var(--t-sm); line-height: 1.35; }
-.detail > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.detail { font-size: var(--t-body); line-height: 1.35; }
+.det-group { margin-top: 22px; }
+.detail dl { margin: 0; }
+.detail dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 11px; border-bottom: 1px solid var(--line); }
+.detail dl > div:last-child { border-bottom: 0; }
+.detail dl > .sum { font-weight: 500; }
 .detail dt { min-width: 0; }
-.detail dt small { display: block; margin-top: 1px; font-size: var(--t-cap); color: var(--muted); overflow-wrap: anywhere; }
+.detail dt small { display: block; margin-top: 2px; font-size: var(--t-cap); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
 .detail dd { margin: 0; text-align: right; white-space: nowrap; }
 
 .set-group { margin-top: 30px; }
 .set-group:first-child { margin-top: 4px; }
-.set-group h3 { margin: 0 0 6px; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.set-group h3, .det-group h3 { margin: 0 0 6px; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .set-note { margin: -2px 0 4px; font-size: var(--t-cap); color: var(--muted); }
 .set-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 46px; align-items: center; column-gap: 10px; padding-block: 9px; border-bottom: 1px solid var(--line); cursor: text; }
 .set-row:last-of-type { border-bottom: 0; }
@@ -237,7 +241,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <section class="sec stl" id="l-stl" aria-label="STL file">
     <div class="piece-info">
       <span class="fname" id="fname">Ring band, size 17</span>
-      <span class="piece-meta"><span id="dims">—</span><span id="exTag"> · example</span></span>
+      <span class="piece-meta"><span id="dims">—</span><span id="exTag">, example</span></span>
     </div>
     <div class="figs stl-figs">
       <div class="fig stage"><canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas></div>
@@ -281,7 +285,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <p class="price-detail" id="priceDetail">Loading prices…</p>
       <details class="more">
         <summary><span class="when-closed">More details</span><span class="when-open">Fewer details</span></summary>
-        <dl class="detail" id="detail"></dl>
+        <div class="detail" id="detail"></div>
       </details>
     </div>
   </details>
@@ -338,7 +342,7 @@ const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { premiumPct: 12, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, printPct: 5, vatPct: 18, rangeLo: 3.5, rangeHi: 3.5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -499,6 +503,9 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
   const saved = store.get("gq.settings") || {};
+  // Older versions saved the 2% / 5% range defaults and labor/sprue settings; move them to the current defaults.
+  if (saved.rangeLo === 2 && saved.rangeHi === 5) { delete saved.rangeLo; delete saved.rangeHi; }
+  ["labor", "sprueD", "sprueL"].forEach((k) => delete saved[k]);
   const settings = { ...DEFAULTS, ...saved, dens: { ...DEFAULTS.dens, ...(saved.dens || {}) } };
   if (!FINENESS[settings.karat]) settings.karat = DEFAULTS.karat;
   if (!UNIT_TO_CM3[settings.unit]) settings.unit = DEFAULTS.unit;
@@ -773,8 +780,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
     if (spotG) {
       const fxNote = fOver ? " (manual)" : prices.fxSrc === "live" ? "" : prices.fxSrc === "ECB" ? " (ECB)" : " (daily rate)";
       $("priceDetail").textContent =
-        "Gold " + ils(chargedG) + "/g pure · spot $" + fmt0.format(gOz) + "/oz" + (gOver ? " (manual)" : "") +
-        " + " + settings.premiumPct + "% · $1 = ₪" + fx.toFixed(3) + fxNote;
+        "Pure gold " + ils(chargedG) + "/g (" + (gOver ? "manual " : "") + "spot $" + fmt0.format(gOz) + "/oz + " + settings.premiumPct + "%)\n" +
+        "$1 = ₪" + fx.toFixed(3) + fxNote;
     } else {
       $("priceDetail").textContent = loading ? "Loading prices…" : "No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.";
     }
@@ -837,7 +844,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
     mesh.range = rg;
     setTotal(fmt0.format(rg.lo) + '<span class="dash">–</span>' + fmt0.format(rg.hi));
     $("qTotal").classList.toggle("long", rg.hi >= 10000);
-    $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
+    $("qUsd").textContent = "Including " + settings.vatPct + "% VAT, ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
     showDetails(q, rg, { spotG, gOver, fOver, fx });
     const shown = wholeShekels([q.gold, q.printing, q.vat], q.total);
     ["qGold", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
@@ -924,27 +931,38 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
   // ---------- more details ----------
   // Every number behind the quote, exact to the agora.
   function showDetails(q, rg, { spotG, gOver, fOver, fx }) {
-    const rows = [];
-    const add = (label, note, value) => rows.push([label, note, value]);
-    add("Gold", grams(q.fine) + " pure × " + ils(q.goldIlsG) + "/g", ils(q.gold));
-    add("Printing", settings.printPct + "% of " + ils(q.gold) + " gold", ils(q.printing));
-    add("Before VAT", "", ils(q.subtotal));
-    add("VAT", settings.vatPct + "% of " + ils(q.subtotal), ils(q.vat));
-    add("Estimate", "exact", ils(q.total));
-    add("Quote range", settings.rangeLo + "% under to " + settings.rangeHi + "% over, rounded to ₪" + rg.step, ils0(rg.lo) + " – " + ils0(rg.hi));
-    add("Gold price", "spot " + usd(goldOz()) + "/oz" + (gOver ? " (manual)" : prices.goldAt ? ", " + ago(prices.goldAt) : "") + " = " + ils(spotG) + "/g pure, + " + settings.premiumPct + "%", ils(q.goldIlsG) + "/g");
-    add("Exchange rate", fOver ? "manual" : prices.fxSrc === "live" ? "live, Coinbase" : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : "daily rate, " + day(prices.fxAt), "$1 = ₪" + fx.toFixed(3));
-    const e = mesh.edges;
-    add("Mesh", mesh.stats.tris.toLocaleString("en-US") + " triangles", !e ? "Checking…" : e.open || e.nonManifold ? "Has holes" : "Watertight");
-    const dl = $("detail");
-    dl.replaceChildren(...rows.map(([label, note, value]) => {
-      const row = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd");
+    const row = (label, note, value, cls) => {
+      const div = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd");
+      if (cls) div.className = cls;
       dt.textContent = label;
       if (note) { const sm = document.createElement("small"); sm.textContent = note; dt.append(sm); }
       dd.textContent = value;
-      row.append(dt, dd);
-      return row;
-    }));
+      div.append(dt, dd);
+      return div;
+    };
+    const group = (title, rows) => {
+      const sec = document.createElement("section"), h = document.createElement("h3"), dl = document.createElement("dl");
+      sec.className = "det-group";
+      h.textContent = title;
+      dl.append(...rows);
+      sec.append(h, dl);
+      return sec;
+    };
+    const fxNote = fOver ? "entered manually" : prices.fxSrc === "live" ? "Coinbase, live" : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : "daily rate, " + day(prices.fxAt);
+    $("detail").replaceChildren(
+      group("Exact amounts", [
+        row("Gold", grams(q.fine) + " pure × " + ils(q.goldIlsG) + "/g", ils(q.gold)),
+        row("Printing", settings.printPct + "% of gold", ils(q.printing)),
+        row("VAT", settings.vatPct + "% of " + ils(q.subtotal), ils(q.vat)),
+        row("Estimate", "", ils(q.total), "sum"),
+        row("Quote range", settings.rangeLo + "% under, " + settings.rangeHi + "% over, rounded to ₪" + rg.step, ils0(rg.lo) + "–" + fmt0.format(rg.hi)),
+      ]),
+      group("Rates", [
+        row("Gold spot", gOver ? "entered manually" : "gold-api.com" + (prices.goldAt ? ", " + ago(prices.goldAt) : ""), usd(goldOz()) + "/oz"),
+        row("Pure gold", "spot " + ils(spotG) + "/g + " + settings.premiumPct + "%", ils(q.goldIlsG) + "/g"),
+        row("Exchange rate", fxNote, "$1 = ₪" + fx.toFixed(3)),
+      ]),
+    );
   }
 
   // ---------- start ----------
