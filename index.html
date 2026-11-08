@@ -139,18 +139,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fold[open] summary::after { content: "−"; }
 .fold-body { padding-bottom: 28px; }
 
-.line { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 12px; border-bottom: 1px solid var(--line); font-size: var(--t-body); line-height: 1.35; }
-.line > :first-child { min-width: 0; }
-.line small { display: block; margin-top: 2px; font-size: var(--t-cap); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
+.line { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 7px; font-size: var(--t-body); line-height: 1.35; }
 .line .amt { white-space: nowrap; }
-.line.subtotal > :first-child, .line.subtotal .amt { font-weight: 500; }
-.line.grand { border-bottom: 0; font-weight: 500; }
-.price-detail { margin: 12px 0 0; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); }
-.mini { margin: 24px 0 0; display: grid; gap: 6px; }
-.mini div { display: flex; justify-content: space-between; gap: 8px; font-size: var(--t-sm); }
-.mini dt { color: var(--muted); }
-.mini dd { margin: 0; text-align: right; }
-.units { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.line.total { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--line); font-weight: 500; }
+.price-detail { margin: 18px 0 0; font-size: var(--t-cap); line-height: 1.55; color: var(--muted); }
+.units { display: flex; align-items: center; gap: 8px; margin-top: 28px; }
 .units-lbl { margin-right: auto; font-size: var(--t-sm); color: var(--muted); }
 .chip {
   min-height: 40px; min-width: 56px; padding: 0 14px; border-radius: 999px;
@@ -268,24 +261,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <details class="fold" id="breakdown">
     <summary>Price breakdown</summary>
     <div class="fold-body">
-      <div class="line"><span>Gold<small id="nGold">—</small></span><span class="amt" id="qGold">—</span></div>
-      <div class="line"><span>Sprue<small id="nSprue">—</small></span><span class="amt" id="qSprue">—</span></div>
-      <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="amt" id="qLabor">—</span></div>
-      <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
-      <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
+      <div class="line"><span>Gold</span><span class="amt" id="qGold">—</span></div>
+      <div class="line"><span>Sprue</span><span class="amt" id="qSprue">—</span></div>
+      <div class="line"><span>Labor</span><span class="amt" id="qLabor">—</span></div>
+      <div class="line"><span>Printing</span><span class="amt" id="qPrint">—</span></div>
       <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
-      <div class="line subtotal"><span>Estimate</span><span class="amt" id="qTotal2">—</span></div>
-      <div class="line grand"><span>Quote range<small id="nRange">—</small></span><span class="amt" id="qRange">—</span></div>
+      <div class="line total"><span>Estimate</span><span class="amt" id="qTotal2">—</span></div>
       <p class="price-detail" id="priceDetail">Loading prices…</p>
-      <dl class="mini">
-        <div><dt>Mesh</dt><dd id="tris">—</dd></div>
-      </dl>
-      <div class="units" id="units" role="radiogroup" aria-label="File units">
-        <span class="units-lbl">File units</span>
-        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
-        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
-        <button type="button" class="chip" role="radio" data-u="in">inch</button>
-      </div>
       <button class="linkbtn" id="copyBd" type="button">Copy full breakdown for me</button>
     </div>
   </details>
@@ -312,6 +294,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
         <label class="field">Gold<small>$ per troy oz. Blank = live</small><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
         <label class="field">USD → ILS<small>Blank = live</small><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
         <p class="field-err" id="fieldErr" hidden></p>
+      </div>
+      <div class="units" id="units" role="radiogroup" aria-label="File units">
+        <span class="units-lbl">File units</span>
+        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
+        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
+        <button type="button" class="chip" role="radio" data-u="in">inch</button>
       </div>
       <button type="button" class="reset" id="reset">Reset to defaults</button>
     </div>
@@ -454,6 +442,16 @@ function priceRange(total, loPct, hiPct) {
 const sprueVolume = (diameterMm, lengthMm) => (Math.PI * (diameterMm / 2) ** 2 * lengthMm) / 1000;
 
 // The casting house bills the sprue's metal too, so its gold is charged like the piece's. Labor is on the finished piece only.
+// Whole shekels for display: largest remainder, so the shown lines add up exactly to the rounded total.
+function wholeShekels(parts, total) {
+  const target = Math.round(total);
+  const out = parts.map((p) => Math.floor(p));
+  let left = target - out.reduce((a, b) => a + b, 0);
+  const order = parts.map((p, i) => [p - out[i], i]).sort((a, b) => b[0] - a[0]);
+  for (let j = 0; left > 0 && j < order.length; j++, left--) out[order[j][1]]++;
+  return { parts: out, total: target };
+}
+
 function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls, sprueCm3 = 0 }) {
   const weight = volumeCm3 * density;
   const fine = weight * FINENESS[karat];
@@ -761,11 +759,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     freshEl.hidden = !freshEl.textContent;
 
     if (spotG) {
-      const fxSrc = fOver ? "manual" : prices.fxSrc === "live" ? "live, Coinbase" : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : "daily rate, " + day(prices.fxAt);
+      const fxNote = fOver ? " (manual)" : prices.fxSrc === "live" ? "" : prices.fxSrc === "ECB" ? " (ECB)" : " (daily rate)";
       $("priceDetail").textContent =
-        "Gold " + usd(gOz) + "/oz" + (gOver ? " (manual)" : prices.goldAt ? ", updated " + ago(prices.goldAt) : "") +
-        " = " + ils(spotG) + " per gram of pure gold, plus " + settings.premiumPct + "% premium = " + ils(chargedG) +
-        ". $1 = ₪" + fx.toFixed(3) + " (" + fxSrc + ").";
+        "Gold " + ils(chargedG) + "/g pure · spot $" + fmt0.format(gOz) + "/oz" + (gOver ? " (manual)" : "") +
+        " + " + settings.premiumPct + "% · $1 = ₪" + fx.toFixed(3) + fxNote;
     } else {
       $("priceDetail").textContent = loading ? "Loading prices…" : "No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.";
     }
@@ -784,8 +781,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     copyBd.disabled = true;
     if (!mesh) {
       $("volSub").textContent = "volume";
-      setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qSprue", "qLabor", "qPrint", "qSub", "qVat", "qTotal2", "qRange"], "—");
-      setText(["nGold", "nSprue", "nLabor", "nPrint", "nRange", "qUsd"], "");
+      setText(["dims", "vol", "weight", "fine", "qGold", "qSprue", "qLabor", "qPrint", "qVat", "qTotal2"], "—");
+      $("qUsd").textContent = "";
       setTotal("—");
       return;
     }
@@ -795,12 +792,11 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const volumeCm3 = st.volume * UNIT_TO_CM3[u];
     $("vol").innerHTML = fig(fmt0.format(volumeCm3 * 1000), "mm³");
     $("volSub").textContent = "volume";
-    $("tris").textContent = mesh.edges ? (mesh.edges.open || mesh.edges.nonManifold ? "Has holes" : "Watertight") : "Checking…";
 
     const warns = [];
     const maxMm = Math.max(...mm);
-    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units at the bottom of Price breakdown.");
-    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units at the bottom of Price breakdown.");
+    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.");
+    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.");
     if (mesh.edges && (mesh.edges.open || mesh.edges.nonManifold)) {
       const parts = [];
       if (mesh.edges.open) parts.push(mesh.edges.open.toLocaleString("en-US") + " open edges");
@@ -819,12 +815,9 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const sprueCm3 = sprueVolume(settings.sprueD, settings.sprueL);
     const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx, sprueCm3 };
     if (!gOz || !fx) {
-      setText(["qGold", "qSprue", "nSprue", "qPrint", "qSub", "qVat", "qTotal2", "qRange", "nRange"], "—");
+      setText(["qGold", "qSprue", "qPrint", "qVat", "qTotal2"], "—");
       setTotal("—");
-      $("qLabor").textContent = ils(round2(weight * settings.labor));
-      $("nGold").textContent = grams(fine) + " pure gold, waiting for price";
-      $("nLabor").textContent = grams(weight) + " × " + ils(settings.labor);
-      $("nPrint").textContent = settings.printPct + "% of gold";
+      $("qLabor").textContent = ils0(weight * settings.labor);
       $("qUsd").textContent = "Waiting for the gold price";
       return;
     }
@@ -834,20 +827,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     mesh.range = rg;
     setTotal(fmt0.format(rg.lo) + '<span class="dash">–</span>' + fmt0.format(rg.hi));
     $("qTotal").classList.toggle("long", rg.hi >= 10000);
-    $("qTotal2").textContent = ils(q.total);
-    $("qRange").textContent = ils0(rg.lo) + " – " + ils0(rg.hi);
-    $("nRange").textContent = settings.rangeLo + "% under to " + settings.rangeHi + "% over, rounded to ₪" + rg.step;
     $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
-    $("qGold").textContent = ils(q.gold);
-    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
-    $("qSprue").textContent = ils(q.sprue);
-    $("nSprue").textContent = grams(q.sprueWeight) + " (" + grams(q.sprueFine) + " pure) × " + ils(q.goldIlsG);
-    $("qLabor").textContent = ils(q.labor);
-    $("nLabor").textContent = grams(q.weight) + " × " + ils(settings.labor);
-    $("qPrint").textContent = ils(q.printing);
-    $("nPrint").textContent = settings.printPct + "% of " + ils(q.gold + q.sprue) + (q.sprue ? " gold and sprue" : "");
-    $("qSub").textContent = ils(q.subtotal);
-    $("qVat").textContent = ils(q.vat);
+    const shown = wholeShekels([q.gold, q.sprue, q.labor, q.printing, q.vat], q.total);
+    ["qGold", "qSprue", "qLabor", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
+    $("qTotal2").textContent = ils0(shown.total);
     copyBd.disabled = !!mesh.example;
   }
 
