@@ -236,7 +236,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     <summary>Price breakdown</summary>
     <div class="fold-body">
       <div class="line"><span>Gold<small id="nGold">—</small></span><span class="amt" id="qGold">—</span></div>
-      <div class="line" id="sprueLine"><span>Sprue<small id="nSprue">—</small></span><span class="amt" id="qSprue">—</span></div>
+      <div class="line"><span>Sprue<small id="nSprue">—</small></span><span class="amt" id="qSprue">—</span></div>
       <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="amt" id="qLabor">—</span></div>
       <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
       <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
@@ -268,8 +268,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
         <h3>Quote range</h3>
         <label class="field">Below<small>% under the estimate</small><input id="sRangeLo" type="text" inputmode="decimal" autocomplete="off"></label>
         <label class="field">Above<small>% over the estimate</small><input id="sRangeHi" type="text" inputmode="decimal" autocomplete="off"></label>
-        <h3>Sprue</h3>
-        <label class="field">Sprues<small>per piece, 0 = none</small><input id="sSprueN" type="text" inputmode="numeric" autocomplete="off"></label>
+        <h3>Sprue, one per piece</h3>
         <label class="field">Diameter<small>mm</small><input id="sSprueD" type="text" inputmode="decimal" autocomplete="off"></label>
         <label class="field">Length<small>mm, piece to tree</small><input id="sSprueL" type="text" inputmode="decimal" autocomplete="off"></label>
         <h3>Density, g/cm³</h3>
@@ -297,7 +296,7 @@ const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, sprueN: 1, sprueD: 3, sprueL: 8, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, sprueD: 3, sprueL: 8, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -417,8 +416,8 @@ function priceRange(total, loPct, hiPct) {
   return { lo: Math.floor((total * (1 - loPct / 100)) / step) * step, hi: Math.ceil((total * (1 + hiPct / 100)) / step) * step, step };
 }
 
-// Sprues are rods: count × π r² × length, in mm. Returns cm³.
-const sprueVolume = (count, diameterMm, lengthMm) => (count * Math.PI * (diameterMm / 2) ** 2 * lengthMm) / 1000;
+// One sprue per piece, a rod: π r² × length, in mm. Returns cm³.
+const sprueVolume = (diameterMm, lengthMm) => (Math.PI * (diameterMm / 2) ** 2 * lengthMm) / 1000;
 
 // The casting house bills the sprue's metal too, so its gold is charged like the piece's. Labor is on the finished piece only.
 function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls, sprueCm3 = 0 }) {
@@ -782,8 +781,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("fine").innerHTML = fig(fmt2.format(fine), "g");
     $("fineSub").textContent = "pure gold";
 
-    const sprueCm3 = sprueVolume(settings.sprueN, settings.sprueD, settings.sprueL);
-    $("sprueLine").hidden = !sprueCm3;
+    const sprueCm3 = sprueVolume(settings.sprueD, settings.sprueL);
     const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx, sprueCm3 };
     if (!gOz || !fx) {
       setText(["qGold", "qSprue", "nSprue", "qPrint", "qSub", "qVat", "qTotal2", "qRange", "nRange"], "—");
@@ -838,7 +836,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     ["sVat", () => settings.vatPct, (v) => (settings.vatPct = v)],
     ["sRangeLo", () => settings.rangeLo, (v) => (settings.rangeLo = v)],
     ["sRangeHi", () => settings.rangeHi, (v) => (settings.rangeHi = v)],
-    ["sSprueN", () => settings.sprueN, (v) => (settings.sprueN = Math.round(v))],
     ["sSprueD", () => settings.sprueD, (v) => (settings.sprueD = v)],
     ["sSprueL", () => settings.sprueL, (v) => (settings.sprueL = v)],
     ["sD9", () => settings.dens[9], (v) => (settings.dens[9] = v)],
@@ -853,7 +850,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
   const RANGES = {
     sPremium: [0, 50, "Gold premium", "%"], sLabor: [0, 1000, "Labor", " ₪/g"], sPrint: [0, 50, "Printing fee", "%"],
-    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Range below", "%"], sRangeHi: [0, 30, "Range above", "%"], sSprueN: [0, 6, "Sprues", ""], sSprueD: [0.5, 8, "Sprue diameter", " mm"], sSprueL: [1, 30, "Sprue length", " mm"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
+    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Range below", "%"], sRangeHi: [0, 30, "Range above", "%"], sSprueD: [0.5, 8, "Sprue diameter", " mm"], sSprueL: [1, 30, "Sprue length", " mm"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
     sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
   };
   function fieldError(input, msg) {
