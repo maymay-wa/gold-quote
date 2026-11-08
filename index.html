@@ -110,12 +110,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid var(--frame); border-radius: 14px; }
 .seg button {
-  display: grid; place-items: center; gap: 0; min-height: 54px; padding: 6px 4px;
+  display: grid; place-items: center; gap: 0; min-height: 48px; padding: 6px 4px;
   border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 500 18px var(--font);
 }
-.seg button small { font-size: 12px; font-weight: 400; letter-spacing: .05em; color: var(--muted); }
 .seg button[aria-checked="true"] { background: var(--solid); color: var(--on-ink); }
-.seg button[aria-checked="true"] small { color: var(--on-ink-muted); }
 
 .total { font-size: 58px; font-weight: 300; letter-spacing: -.03em; line-height: 1; }
 .total .cur { font-family: var(--sym); font-size: .4em; font-weight: 300; vertical-align: .95em; margin-right: .14em; color: var(--muted); letter-spacing: 0; }
@@ -209,9 +207,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <section class="sec" aria-labelledby="l-gold">
     <h2 class="label" id="l-gold">Gold</h2>
     <div class="seg" id="karats" role="radiogroup" aria-label="Gold type">
-      <button type="button" role="radio" data-k="9">9K<small>375</small></button>
-      <button type="button" role="radio" data-k="14">14K<small>585</small></button>
-      <button type="button" role="radio" data-k="18">18K<small>750</small></button>
+      <button type="button" role="radio" data-k="9">9K</button>
+      <button type="button" role="radio" data-k="14">14K</button>
+      <button type="button" role="radio" data-k="18">18K</button>
     </div>
     <div class="figs">
       <div class="fig"><b id="weight">—</b><span id="weightSub">weight</span></div>
