@@ -16,26 +16,27 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2394680F'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='28' font-weight='700' text-anchor='middle' fill='%23F4EAD0'%3EAu%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: one thumb-width column. Prices, file, alloy + scale readout, quote, settings. */
+/* Layout: answer first. Piece (input) → Quote (alloy, total, share) on the first screen → breakdown → settings. */
 :root {
   --bg: #EFF0F2;
   --surface: #FFFFFF;
-  --ink: #191B20;
+  --ink: #17191E;
   --muted: #5F6570;
-  --line: #DCDFE4;
+  --line: #E1E3E8;
+  --line-strong: #B9BEC7;
   --gold: #94680F;
-  --gold-soft: #F4EAD0;
-  --gold-ink: #5A3F08;
+  --gold-soft: #F6EDD6;
+  --gold-ink: #573D07;
+  --on-gold: #FFFFFF;
   --stage: #E4E6EA;
-  --stage-hi: #F8F9FA;
+  --stage-hi: #FAFAFB;
   --warn: #9C3F15;
   --warn-soft: #FBE8DD;
   --ok: #2E7A4B;
-  --font-body: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --font-data: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --r: 16px;
+  --font: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --r: 18px;
   color-scheme: light;
 }
 
@@ -45,7 +46,8 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.45 var(--font-body);
+  font: 16px/1.45 var(--font);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   padding-top: env(safe-area-inset-top, 0px);
@@ -53,222 +55,226 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-main { max-width: 480px; margin: 0 auto; display: grid; gap: 12px; padding-block: 14px 28px; }
+main { max-width: 480px; margin: 0 auto; display: grid; gap: 12px; padding-block: 12px 28px; }
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
-.lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
-
-/* Header */
-.top { display: flex; align-items: center; gap: 10px; padding-block: 4px 2px; }
-.stamp {
-  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px;
-  border: 1.5px solid var(--gold); color: var(--gold);
-  font: 500 15px/1 var(--font-data); letter-spacing: -.02em;
-}
-h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
-
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
-h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h2 { margin: 0 0 4px; font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* Price strip */
-.rates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 4px 14px; align-items: start; }
-.rate { display: grid; gap: 1px; min-width: 0; }
-.rate .val { font-size: 20px; font-weight: 500; letter-spacing: -.02em; }
-.rate .val small { font-size: 13px; color: var(--muted); font-weight: 400; }
-.rate .meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
-.refresh {
-  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
-  background: var(--bg); display: grid; place-items: center; padding: 0;
+/* Header + price pill */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.stamp {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+  background: var(--gold); color: var(--on-gold); font-size: 14px; font-weight: 800; letter-spacing: -.02em;
 }
-.refresh svg { width: 20px; height: 20px; }
-.refresh.spin svg { animation: spin .9s linear infinite; }
+h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.price-pill {
+  flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 5px 12px;
+  border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); text-align: left;
+}
+.pill-text { display: grid; line-height: 1.15; }
+.pill-text b { font-size: 15px; font-weight: 700; }
+.pill-text small { font-size: 11.5px; color: var(--muted); }
+.pill-icon { width: 16px; height: 16px; color: var(--muted); }
+.price-pill.spin .pill-icon { animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.rate-status { grid-column: 1 / -1; margin: 8px 0 0; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
-.dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.live { background: var(--ok); }
 .dot.stale { background: var(--warn); }
 
-/* File + model */
+/* Piece */
 .pick {
-  position: relative; display: grid; gap: 2px; place-items: center; text-align: center;
-  min-height: 78px; padding: 14px; border: 1.5px dashed var(--gold); border-radius: 12px;
-  background: var(--gold-soft); color: var(--gold-ink); cursor: pointer;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 54px; padding: 0 16px; border-radius: 14px; border: 1.5px solid var(--gold);
+  background: var(--gold); color: var(--on-gold); font-weight: 700; font-size: 17px; cursor: pointer;
 }
+.pick svg { width: 20px; height: 20px; }
+.pick.secondary { min-height: 48px; background: transparent; color: var(--gold-ink); font-size: 16px; }
 .pick:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
-.pick.drag { border-style: solid; }
-.pick-main { font-weight: 700; font-size: 17px; }
-.pick-sub { font-size: 13px; opacity: .85; }
-.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); }
+.pick.drag { outline: 2px dashed var(--gold); outline-offset: 3px; }
+.pick-hint { margin: 6px 0 0; text-align: center; font-size: 12.5px; color: var(--muted); }
 
-.model { display: grid; gap: 12px; margin-top: 14px; }
+.piece-row { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 14px; }
 #view {
-  display: block; width: 100%; height: 210px; border-radius: 12px;
-  background: radial-gradient(circle at 50% 42%, var(--stage-hi), var(--stage) 75%);
-  touch-action: none; cursor: grab;
+  display: block; width: 128px; height: 128px; border-radius: 14px;
+  background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 78%);
+  touch-action: pan-y; cursor: grab;
 }
 #view:active { cursor: grabbing; }
-.model-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.fname { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.piece-info { display: grid; gap: 8px; min-width: 0; }
+.name-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.fname {
+  min-width: 0; font-weight: 700; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .tag {
-  flex: none; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  padding: 3px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-ink);
+  flex: none; margin-top: 1px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-ink);
 }
-.hint { margin-left: auto; flex: none; font-size: 12px; color: var(--muted); }
-
-.rows { margin: 0; display: grid; }
-.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 8px; border-bottom: 1px solid var(--line); }
-.row:last-child { border-bottom: 0; }
-.row > :first-child { min-width: 0; }
-.row dt, .row dd { margin: 0; }
-.row dt { color: var(--muted); font-size: 14px; }
-.row dd { text-align: right; font-size: 14.5px; }
-
-.warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
-
-.seg { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.seg .lbl { margin-right: auto; }
+.mini { margin: 0; display: grid; gap: 3px; }
+.mini div { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.mini dt { color: var(--muted); }
+.mini dd { margin: 0; font-weight: 600; text-align: right; }
+.warn { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+.units { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.units-lbl { margin-right: auto; font-size: 14px; color: var(--muted); }
 .chip {
-  min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
-  background: transparent; font-weight: 500; font-size: 15px;
+  min-height: 40px; min-width: 50px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 14px;
 }
-.chip[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip[aria-checked="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 
-/* Alloy */
+/* Quote: the one emphasized card */
+.quote { display: grid; gap: 14px; border: 1.5px solid var(--gold); box-shadow: 0 10px 28px -18px rgba(148, 104, 15, .55); }
 .karats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .karat {
   display: grid; place-items: center; gap: 1px; min-height: 66px; padding: 8px 4px;
-  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface);
+  border-radius: 14px; border: 1.5px solid var(--line-strong); background: var(--surface);
 }
-.karat b { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
-.karat span { font-family: var(--font-data); font-size: 12px; color: var(--muted); letter-spacing: .08em; }
-.karat[aria-checked="true"] { border-color: var(--gold); background: var(--gold-soft); color: var(--gold-ink); }
-.karat[aria-checked="true"] span { color: var(--gold-ink); }
-
-.scale { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
-.scale > div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--bg); min-width: 0; }
-.big { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 25px; font-weight: 500; letter-spacing: -.03em; }
-.scale .sub { font-size: 12px; color: var(--muted); font-family: var(--font-data); }
-
-/* Quote */
-.line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 9px; border-bottom: 1px solid var(--line); }
-.line > :first-child { min-width: 0; }
-.line small { display: block; font-size: 12.5px; color: var(--muted); font-family: var(--font-data); overflow-wrap: anywhere; }
-.line .num { white-space: nowrap; }
-.line.subtotal { font-weight: 600; }
-.total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 14px; }
-.total > span:first-child { font-weight: 700; font-size: 18px; }
-.total .num { font-size: 34px; font-weight: 500; color: var(--gold); letter-spacing: -.04em; white-space: nowrap; }
-.usd { text-align: right; color: var(--muted); font-size: 14px; }
-.quote-note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+.karat b { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+.karat .kp { font-size: 13px; color: var(--muted); }
+.karat[aria-checked="true"] { background: var(--gold); border-color: var(--gold); color: var(--on-gold); }
+.karat[aria-checked="true"] .kp { color: var(--on-gold); opacity: .9; }
+.total-lbl { font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.total-num { font-size: 46px; font-weight: 800; letter-spacing: -.035em; line-height: 1.05; margin-top: 2px; }
+.total-usd { font-size: 15px; color: var(--muted); margin-top: 2px; }
+.fresh { display: flex; align-items: center; gap: 7px; margin-top: 6px; font-size: 13.5px; color: var(--muted); }
+.fresh.stale { color: var(--warn); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; padding: 10px 12px; border-radius: 12px; background: var(--bg); min-width: 0; }
+.stat b { font-size: 19px; font-weight: 700; }
+.stat small { font-size: 12.5px; color: var(--muted); }
+.quote-note { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--gold-soft); color: var(--gold-ink); font-size: 14px; }
 .share {
-  margin-top: 14px; width: 100%; min-height: 52px; border-radius: 12px; border: 0;
-  background: var(--ink); color: var(--bg); font-weight: 600; font-size: 17px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; border-radius: 14px;
+  border: 0; background: var(--ink); color: var(--surface); font-weight: 700; font-size: 17px;
 }
-.share:disabled { opacity: .45; cursor: default; }
+.share svg { width: 20px; height: 20px; }
+.share:disabled { opacity: .4; cursor: default; }
+.copy-bd {
+  justify-self: center; min-height: 44px; padding: 0 12px; border: 0; background: none;
+  color: var(--gold-ink); font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 3px;
+}
+.copy-bd:disabled { opacity: .4; cursor: default; }
+
+/* Breakdown */
+.line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 10px; border-bottom: 1px solid var(--line); font-size: 15.5px; }
+.line > :first-child { min-width: 0; }
+.line small { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.line .amt { font-weight: 600; white-space: nowrap; }
+.line.subtotal { font-weight: 700; }
+.line.grand { border-bottom: 0; font-weight: 800; font-size: 17px; }
+.line.grand .amt { font-weight: 800; }
+.price-detail { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--muted); line-height: 1.5; }
 
 /* Settings */
 .settings summary {
   list-style: none; display: flex; justify-content: space-between; align-items: center;
-  min-height: 28px; font-weight: 600; cursor: pointer;
+  min-height: 44px; margin-block: -8px; font-weight: 700; cursor: pointer;
 }
 .settings summary::-webkit-details-marker { display: none; }
-.settings summary::after { content: "+"; font: 400 22px/1 var(--font-data); color: var(--muted); }
+.settings summary::after { content: "+"; font-size: 24px; line-height: 1; font-weight: 400; color: var(--muted); }
 .settings[open] summary::after { content: "−"; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; margin-top: 14px; }
-.field { display: grid; gap: 4px; font-size: 14px; font-weight: 600; min-width: 0; align-content: start; }
+.field { display: grid; gap: 4px; font-size: 14px; font-weight: 700; min-width: 0; align-content: start; }
 .field small { font-weight: 400; color: var(--muted); font-size: 12px; }
 .field input {
-  width: 100%; min-width: 0; font: 16px var(--font-data); padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  width: 100%; min-width: 0; font: 16px var(--font); font-variant-numeric: tabular-nums; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg); color: var(--ink);
 }
-.field.wide { grid-column: 1 / -1; }
-.fields h3 { grid-column: 1 / -1; margin: 6px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.reset { margin-top: 16px; min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; font-size: 15px; }
+.field input.bad { border-color: var(--warn); background: var(--warn-soft); }
+.field-err { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--warn); }
+.fields h3 { grid-column: 1 / -1; margin: 6px 0 -4px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.reset { margin-top: 16px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; font-size: 15px; }
 
 .foot { font-size: 12.5px; color: var(--muted); line-height: 1.5; padding-inline: 4px; }
 .foot p { margin: 0 0 6px; max-width: 65ch; }
 .foot a { color: inherit; }
 
-@media (prefers-reduced-motion: reduce) { .refresh.spin svg { animation: none; } }
+@media (max-width: 360px) {
+  .piece-row { grid-template-columns: 104px minmax(0, 1fr); }
+  #view { width: 104px; height: 104px; }
+  .total-num { font-size: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .price-pill.spin .pill-icon { animation: none; } }
 </style>
 </head>
 <body>
 <main>
   <header class="top">
-    <span class="stamp" aria-hidden="true">Au</span>
-    <h1>Gold Quote</h1>
+    <div class="brand">
+      <span class="stamp" aria-hidden="true">Au</span>
+      <h1>Gold Quote</h1>
+    </div>
+    <button class="price-pill" id="refresh" type="button" aria-label="Gold price. Tap to refresh.">
+      <span class="dot" id="rateDot"></span>
+      <span class="pill-text"><b id="pillPrice">—</b><small id="pillSub">loading…</small></span>
+      <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
   </header>
 
-  <section class="card rates" aria-label="Prices">
-    <div class="rate">
-      <span class="lbl">Gold spot</span>
-      <span class="val num" id="goldOz">—</span>
-      <span class="meta num" id="goldG">—</span>
-    </div>
-    <div class="rate">
-      <span class="lbl">USD → ILS</span>
-      <span class="val num" id="fxVal">—</span>
-      <span class="meta" id="fxMeta">—</span>
-    </div>
-    <button class="refresh" id="refresh" type="button" aria-label="Refresh prices">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
-    </button>
-    <p class="rate-status" id="rateStatus" role="status"><span class="dot" id="rateDot"></span><span id="rateText">Loading prices…</span></p>
-  </section>
-
-  <section class="card" aria-label="Model">
+  <section class="card" aria-label="Piece">
     <label class="pick" id="pick">
       <input type="file" id="stl" class="vh">
-      <span class="pick-main">Choose STL file</span>
-      <span class="pick-sub">Read on this device. Never uploaded.</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="M9 15l3-3 3 3"/></svg>
+      <span id="pickText">Choose STL file</span>
     </label>
-    <div class="model">
+    <p class="pick-hint">The file stays on this phone. Nothing is uploaded.</p>
+    <div class="piece-row">
       <canvas id="view" aria-label="3D preview. Drag to rotate."></canvas>
-      <div class="model-head">
-        <span class="fname" id="fname">Ring band</span>
-        <span class="tag" id="exTag">Example</span>
-        <span class="hint">Drag to rotate</span>
+      <div class="piece-info">
+        <div class="name-row"><span class="fname" id="fname">Ring band, size 17</span><span class="tag" id="exTag">Example</span></div>
+        <dl class="mini">
+          <div><dt>Size</dt><dd id="dims">—</dd></div>
+          <div><dt>Volume</dt><dd id="vol">—</dd></div>
+          <div><dt>Mesh</dt><dd id="tris">—</dd></div>
+        </dl>
       </div>
-      <dl class="rows">
-        <div class="row"><dt>Size</dt><dd class="num" id="dims">—</dd></div>
-        <div class="row"><dt>Volume</dt><dd class="num" id="vol">—</dd></div>
-        <div class="row"><dt>Triangles</dt><dd class="num" id="tris">—</dd></div>
-      </dl>
-      <p class="warn" id="meshWarn" hidden></p>
-      <div class="seg" id="units" role="radiogroup" aria-label="File units">
-        <span class="lbl">File units</span>
-        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
-        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
-        <button type="button" class="chip" role="radio" data-u="in">inch</button>
-      </div>
+    </div>
+    <p class="warn" id="meshWarn" hidden></p>
+    <div class="units" id="units" role="radiogroup" aria-label="File units">
+      <span class="units-lbl">File units</span>
+      <button type="button" class="chip" role="radio" data-u="mm">mm</button>
+      <button type="button" class="chip" role="radio" data-u="cm">cm</button>
+      <button type="button" class="chip" role="radio" data-u="in">inch</button>
     </div>
   </section>
 
-  <section class="card" aria-label="Alloy">
-    <h2>Alloy</h2>
+  <section class="card quote" aria-label="Quote">
     <div class="karats" id="karats" role="radiogroup" aria-label="Gold alloy">
-      <button type="button" class="karat" role="radio" data-k="9"><b>9K</b><span>375</span></button>
-      <button type="button" class="karat" role="radio" data-k="14"><b>14K</b><span>585</span></button>
-      <button type="button" class="karat" role="radio" data-k="18"><b>18K</b><span>750</span></button>
+      <button type="button" class="karat" role="radio" data-k="9"><b>9K</b><span class="kp" id="kp9">375</span></button>
+      <button type="button" class="karat" role="radio" data-k="14"><b>14K</b><span class="kp" id="kp14">585</span></button>
+      <button type="button" class="karat" role="radio" data-k="18"><b>18K</b><span class="kp" id="kp18">750</span></button>
     </div>
-    <div class="scale">
-      <div><span class="lbl">Piece weight</span><span class="big" id="weight">—</span><span class="sub" id="weightSub">—</span></div>
-      <div><span class="lbl">Fine gold</span><span class="big" id="fine">—</span><span class="sub" id="fineSub">—</span></div>
+    <div>
+      <div class="total-lbl">Total incl. VAT</div>
+      <div class="total-num" id="qTotal">—</div>
+      <div class="total-usd" id="qUsd"></div>
+      <div class="fresh" id="qFresh"></div>
     </div>
+    <div class="stats">
+      <div class="stat"><b id="weight">—</b><small id="weightSub">piece weight</small></div>
+      <div class="stat"><b id="fine">—</b><small id="fineSub">pure gold</small></div>
+    </div>
+    <p class="quote-note" id="quoteNote" hidden></p>
+    <button class="share" id="share" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+      <span id="shareText">Send quote to customer</span>
+    </button>
+    <button class="copy-bd" id="copyBd" type="button">Copy full breakdown for me</button>
   </section>
 
-  <section class="card" aria-label="Quote">
-    <h2>Quote</h2>
-    <div class="line"><span>Fine gold<small id="nGold">—</small></span><span class="num" id="qGold">—</span></div>
-    <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="num" id="qLabor">—</span></div>
-    <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="num" id="qPrint">—</span></div>
-    <div class="line subtotal"><span>Before VAT</span><span class="num" id="qSub">—</span></div>
-    <div class="line"><span id="lVat">VAT</span><span class="num" id="qVat">—</span></div>
-    <div class="total"><span>Total</span><span class="num" id="qTotal">—</span></div>
-    <div class="usd num" id="qUsd"></div>
-    <p class="quote-note" id="quoteNote" hidden></p>
-    <button class="share" id="share" type="button">Share quote</button>
+  <section class="card" aria-label="Price breakdown">
+    <h2>How the price adds up</h2>
+    <div class="line"><span>Gold<small id="nGold">—</small></span><span class="amt" id="qGold">—</span></div>
+    <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="amt" id="qLabor">—</span></div>
+    <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
+    <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
+    <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
+    <div class="line grand"><span>Total</span><span class="amt" id="qTotal2">—</span></div>
+    <p class="price-detail" id="priceDetail">Loading prices…</p>
   </section>
 
   <details class="card settings" id="settings">
@@ -285,12 +291,13 @@ h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em;
       <h3>Manual prices</h3>
       <label class="field">Gold<small>$ per troy oz. Blank = live</small><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
       <label class="field">USD → ILS<small>Blank = live</small><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
+      <p class="field-err" id="fieldErr" hidden></p>
     </div>
     <button type="button" class="reset" id="reset">Reset to defaults</button>
   </details>
 
   <footer class="foot">
-    <p>Gold is charged on fine gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The 12% default matches what Goldtree was charging over spot on 8 Nov 2026. The exchange rate comes from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a>, or the ECB rate if that's unavailable.</p>
+    <p>Gold is charged on pure gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. Exchange rate from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a>, or the ECB rate if that's unavailable.</p>
     <p>Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.</p>
   </footer>
 </main>
@@ -412,8 +419,8 @@ function ringBand(inner = 17, width = 3, thick = 1.6, seg = 128) {
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Each line is rounded to agorot so the shown lines add up exactly to the total.
 // goldIlsG is the charged price per gram of fine gold: spot plus the premium.
+// Each line is rounded to agorot so the shown lines add up exactly to the total.
 function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls }) {
   const weight = volumeCm3 * density;
   const fine = weight * FINENESS[karat];
@@ -431,9 +438,11 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
 (function () {
   const $ = (id) => document.getElementById(id);
   const fmt2 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
   const fmt1 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const fmt3 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   const ils = (v) => "₪" + fmt2.format(v);
+  const ils0 = (v) => "₪" + fmt0.format(v);
   const usd = (v) => "$" + fmt2.format(v);
   const grams = (v) => fmt2.format(v) + " g";
 
@@ -486,8 +495,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     if (loading) return;
     loading = true;
     $("refresh").classList.add("spin");
-    $("refresh").disabled = true;
-    setStatus("", "Updating prices…");
+    render();
     const [g, f] = await Promise.allSettled([loadGold(), loadFx()]);
     if (g.status === "fulfilled") { prices.goldOz = g.value.oz; prices.goldAt = g.value.at; }
     if (f.status === "fulfilled") { prices.fx = f.value.rate; prices.fxAt = f.value.at; prices.fxSrc = f.value.src; }
@@ -496,7 +504,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     store.set("gq.prices", prices);
     loading = false;
     $("refresh").classList.remove("spin");
-    $("refresh").disabled = false;
     render();
   }
 
@@ -512,16 +519,18 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     if (d.toDateString() === now.toDateString()) return "today";
     return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   }
-  function setStatus(kind, text) {
-    $("rateDot").className = "dot" + (kind ? " " + kind : "");
-    $("rateText").textContent = text;
-  }
-  const parseNum = (s) => {
-    const v = parseFloat(String(s).replace(",", ".").trim());
-    return Number.isFinite(v) && v >= 0 ? v : null;
+  // allowThousands: "4,072.10" means 4072.1 (gold $/oz). Otherwise a comma is a decimal point ("3,19" = 3.19).
+  const parseNum = (s, allowThousands = false) => {
+    let t = String(s == null ? "" : s).replace(/\s/g, "");
+    if (allowThousands && /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, "");
+    else t = t.replace(",", ".");
+    if (!/^(\d+\.?\d*|\.\d+)$/.test(t)) return null;
+    const v = parseFloat(t);
+    return Number.isFinite(v) ? v : null;
   };
-  const goldOz = () => parseNum(settings.goldOverride) || prices.goldOz || null;
+  const goldOz = () => parseNum(settings.goldOverride, true) || prices.goldOz || null;
   const usdIls = () => parseNum(settings.fxOverride) || prices.fx || null;
+  const clock = (ms) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
   // ---------- preview ----------
   const cv = $("view");
@@ -627,8 +636,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   });
   cv.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    view.yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
-    view.pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.012));
+    view.yaw = drag.yaw + (e.clientX - drag.x) * 0.02;
+    view.pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.02));
     schedule();
   });
   const endDrag = () => { drag = null; };
@@ -641,7 +650,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const st = meshStats(pos);
     mesh = { pos, name, example, stats: st, edges: null };
     $("fname").textContent = name;
-    $("exTag").hidden = !example;
     setPreview(pos, st);
     render();
     setTimeout(() => {
@@ -679,33 +687,65 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     w.hidden = !text;
     w.textContent = text || "";
   }
+  const setText = (ids, text) => ids.forEach((id) => ($(id).textContent = text));
 
   // ---------- render ----------
   function render() {
-    // prices
+    // prices: pill + detail
     const gOz = goldOz(), fx = usdIls();
-    const gOver = parseNum(settings.goldOverride), fOver = parseNum(settings.fxOverride);
-    $("goldOz").innerHTML = gOz ? usd(gOz) + "<small>/oz</small>" : "—";
-    $("goldG").textContent = gOz && fx ? ils((gOz / TROY_OZ_G) * fx) + "/g fine" : gOz ? usd(gOz / TROY_OZ_G) + "/g fine" : "No price yet";
-    $("fxVal").textContent = fx ? "₪" + fx.toFixed(3) : "—";
-    $("fxMeta").textContent = fOver ? "Manual rate" : prices.fx ? (prices.fxSrc === "ECB" ? "ECB" : "Daily") + " rate · " + day(prices.fxAt) : "No rate yet";
-    if (!loading) {
-      if (gOver || fOver) setStatus("stale", "Using your manual " + (gOver && fOver ? "gold price and rate" : gOver ? "gold price" : "exchange rate") + " from Pricing settings.");
-      else if (!gOz || !fx) setStatus("stale", "Couldn't load prices. Check your connection, or enter them in Pricing settings.");
-      else if (prices.lastOk) setStatus("live", "Live · gold updated " + ago(prices.goldAt));
-      else setStatus("stale", "Offline. Using prices saved " + ago(prices.checkedAt || prices.goldAt) + ".");
+    const gOver = parseNum(settings.goldOverride, true), fOver = parseNum(settings.fxOverride);
+    const spotG = gOz && fx ? (gOz / TROY_OZ_G) * fx : null;
+    const chargedG = spotG ? spotG * (1 + settings.premiumPct / 100) : null;
+    const isFresh = prices.lastOk && prices.checkedAt && Date.now() - prices.checkedAt < 30 * 60 * 1000;
+    let kind, sub;
+    if (loading) { kind = ""; sub = "updating…"; }
+    else if (gOver || fOver) { kind = "stale"; sub = "manual price"; }
+    else if (!gOz || !fx) { kind = "stale"; sub = "offline · tap to retry"; }
+    else if (isFresh) { kind = "live"; sub = "gold / g · live"; }
+    else { kind = "stale"; sub = "saved " + ago(prices.checkedAt || prices.goldAt); }
+    const freshEl = $("qFresh");
+    if (gOver || fOver) {
+      freshEl.className = "fresh stale";
+      freshEl.textContent = "Using your manual " + (gOver && fOver ? "gold price and rate" : gOver ? "gold price" : "exchange rate") + " from Pricing settings.";
+    } else if (!spotG) {
+      freshEl.className = "fresh stale";
+      freshEl.textContent = loading ? "" : "No gold price yet. Tap the price at the top to retry.";
+    } else if (isFresh || loading) {
+      freshEl.className = "fresh";
+      freshEl.textContent = "Gold price as of " + clock(prices.checkedAt) + ". Updates every 10 min.";
+    } else {
+      freshEl.className = "fresh stale";
+      freshEl.textContent = "Gold price is from " + ago(prices.checkedAt || prices.goldAt) + ". Tap the price at the top to refresh.";
+    }
+    $("rateDot").className = "dot" + (kind ? " " + kind : "");
+    $("pillPrice").textContent = chargedG ? ils0(chargedG) : "No price";
+    $("pillSub").textContent = sub;
+    if (spotG) {
+      $("priceDetail").textContent =
+        "Gold " + usd(gOz) + "/oz" + (gOver ? " (manual)" : prices.goldAt ? ", updated " + ago(prices.goldAt) : "") +
+        " = " + ils(spotG) + " per gram of pure gold, plus " + settings.premiumPct + "% premium = " + ils(chargedG) +
+        ". $1 = ₪" + fx.toFixed(3) + (fOver ? " (manual)." : " (" + (prices.fxSrc === "ECB" ? "ECB" : "daily") + " rate, " + day(prices.fxAt) + ").");
+    } else {
+      $("priceDetail").textContent = loading ? "Loading prices…" : "No gold price or exchange rate yet. Check the connection and tap the price at the top, or enter prices in Pricing settings.";
     }
 
     // toggles
     document.querySelectorAll("#units .chip").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
     document.querySelectorAll("#karats .karat").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
+    $("lVat").textContent = "VAT " + settings.vatPct + "%";
 
-    // model
-    const share = $("share");
+    // piece
+    const real = !!mesh && !mesh.example;
+    $("pick").classList.toggle("secondary", real);
+    $("pickText").textContent = real ? "Choose another STL" : "Choose STL file";
+    $("exTag").hidden = !mesh || !mesh.example;
+    const share = $("share"), copyBd = $("copyBd");
+    copyBd.disabled = true;
     if (!mesh) {
-      ["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal"].forEach((id) => ($(id).textContent = "—"));
-      ["weightSub", "fineSub", "nGold", "nLabor", "nPrint"].forEach((id) => ($(id).textContent = ""));
-      $("qUsd").textContent = "";
+      setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal", "qTotal2"], "—");
+      setText(["nGold", "nLabor", "nPrint", "qUsd"], "");
+      [9, 14, 18].forEach((k) => ($("kp" + k).textContent = Math.round(FINENESS[k] * 1000)));
+      $("quoteNote").hidden = true;
       share.disabled = true;
       return;
     }
@@ -714,12 +754,12 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("dims").textContent = mm.map((d) => fmt1.format(d)).join(" × ") + " mm";
     const volumeCm3 = st.volume * UNIT_TO_CM3[u];
     $("vol").textContent = fmt3.format(volumeCm3) + " cm³";
-    $("tris").textContent = st.tris.toLocaleString("en-US");
+    $("tris").textContent = mesh.edges ? (mesh.edges.open || mesh.edges.nonManifold ? "Has holes" : "Watertight") : "Checking…";
 
     const warns = [];
     const maxMm = Math.max(...mm);
     if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units below.");
-    else if (maxMm > 250) warns.push("This model is over 25 cm across, which is large for jewelry. Check File units below.");
+    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units below.");
     if (mesh.edges && (mesh.edges.open || mesh.edges.nonManifold)) {
       const parts = [];
       if (mesh.edges.open) parts.push(mesh.edges.open.toLocaleString("en-US") + " open edges");
@@ -731,38 +771,44 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const k = settings.karat, density = settings.dens[k];
     const weight = volumeCm3 * density, fine = weight * FINENESS[k];
     $("weight").textContent = grams(weight);
-    $("weightSub").textContent = k + "K · " + density + " g/cm³";
+    $("weightSub").textContent = "piece weight, " + k + "K";
     $("fine").textContent = grams(fine);
-    $("fineSub").textContent = (FINENESS[k] * 100).toFixed(1) + "% gold";
+    $("fineSub").textContent = "pure gold, " + Math.round(FINENESS[k] * 1000);
 
-    $("lVat").textContent = "VAT " + settings.vatPct + "%";
+    const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx };
     if (!gOz || !fx) {
-      ["qGold", "qPrint", "qSub", "qVat", "qTotal"].forEach((id) => ($(id).textContent = "—"));
+      [9, 14, 18].forEach((kk) => ($("kp" + kk).textContent = Math.round(FINENESS[kk] * 1000)));
+      setText(["qGold", "qPrint", "qSub", "qVat", "qTotal", "qTotal2"], "—");
       $("qLabor").textContent = ils(round2(weight * settings.labor));
-      $("nGold").textContent = grams(fine) + " × waiting for price";
+      $("nGold").textContent = grams(fine) + " pure gold, waiting for price";
       $("nLabor").textContent = grams(weight) + " × " + ils(settings.labor);
       $("nPrint").textContent = settings.printPct + "% of gold";
-      $("qUsd").textContent = "";
-      $("quoteNote").hidden = false;
-      $("quoteNote").textContent = "The total appears once a gold price and exchange rate are available.";
+      $("qUsd").textContent = "Waiting for the gold price";
+      $("quoteNote").hidden = true;
       share.disabled = true;
       return;
     }
-    const q = quote({ volumeCm3, karat: k, density, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx });
+    [9, 14, 18].forEach((kk) => {
+      const qq = quote({ ...base, karat: kk, density: settings.dens[kk] });
+      $("kp" + kk).textContent = ils0(qq.total);
+    });
+    const q = quote({ ...base, karat: k, density });
     mesh.quote = q;
+    $("qTotal").textContent = ils0(q.total);
+    $("qTotal2").textContent = ils(q.total);
+    $("qUsd").textContent = "≈ " + usd(q.totalUsd);
     $("qGold").textContent = ils(q.gold);
-    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG) + (settings.premiumPct ? " (spot +" + settings.premiumPct + "%)" : " (spot)");
+    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
     $("qLabor").textContent = ils(q.labor);
     $("nLabor").textContent = grams(q.weight) + " × " + ils(settings.labor);
     $("qPrint").textContent = ils(q.printing);
     $("nPrint").textContent = settings.printPct + "% of " + ils(q.gold);
     $("qSub").textContent = ils(q.subtotal);
     $("qVat").textContent = ils(q.vat);
-    $("qTotal").textContent = ils(q.total);
-    $("qUsd").textContent = "≈ " + usd(q.totalUsd) + " USD";
     $("quoteNote").hidden = !mesh.example;
-    $("quoteNote").textContent = mesh.example ? "This quote is for the example ring. Choose an STL file above to price your own piece." : "";
-    share.disabled = false;
+    $("quoteNote").textContent = mesh.example ? "This is the example ring. Choose your STL file above to quote a real piece." : "";
+    share.disabled = !!mesh.example;
+    copyBd.disabled = !!mesh.example;
   }
 
   // ---------- controls ----------
@@ -792,31 +838,76 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("sGold").value = settings.goldOverride || "";
     $("sFx").value = settings.fxOverride || "";
   }
-  numFields.forEach(([id, , set]) => {
-    $(id).addEventListener("input", (e) => {
+  // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
+  const RANGES = {
+    sPremium: [0, 50, "Gold premium", "%"], sLabor: [0, 1000, "Labor", " ₪/g"], sPrint: [0, 50, "Printing fee", "%"],
+    sVat: [0, 30, "VAT", "%"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
+    sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
+  };
+  function fieldError(input, msg) {
+    const err = $("fieldErr");
+    err.hidden = !msg;
+    err.textContent = msg || "";
+    input.classList.toggle("bad", !!msg);
+    if (msg) setTimeout(() => input.classList.remove("bad"), 2500);
+  }
+  numFields.forEach(([id, get, set]) => {
+    $(id).addEventListener("change", (e) => {
+      const [lo, hi, name, unit] = RANGES[id];
       const v = parseNum(e.target.value);
-      if (v === null) return;
-      set(v); saveSettings(); render();
+      if (v === null || v < lo || v > hi) {
+        fieldError(e.target, name + " must be a number from " + lo + " to " + hi + unit + ". Kept " + get() + unit + ".");
+        e.target.value = get();
+        return;
+      }
+      fieldError(e.target, "");
+      set(v); e.target.value = v; saveSettings(); render();
     });
   });
   ["sGold", "sFx"].forEach((id) => {
-    $(id).addEventListener("input", (e) => {
-      settings[id === "sGold" ? "goldOverride" : "fxOverride"] = e.target.value.trim();
-      saveSettings(); render();
+    $(id).addEventListener("change", (e) => {
+      const key = id === "sGold" ? "goldOverride" : "fxOverride";
+      const raw = e.target.value.trim();
+      if (raw === "") { settings[key] = ""; fieldError(e.target, ""); saveSettings(); render(); return; }
+      const [lo, hi, name, unit] = RANGES[id];
+      const v = parseNum(raw, id === "sGold");
+      if (v === null || v < lo || v > hi) {
+        fieldError(e.target, name + " must be from " + lo + " to " + hi + unit + ", or blank to use the live price.");
+        e.target.value = settings[key];
+        return;
+      }
+      fieldError(e.target, "");
+      settings[key] = String(v); e.target.value = v; saveSettings(); render();
     });
   });
   $("reset").addEventListener("click", () => {
+    if (!confirm("Reset premium, labor, printing fee, VAT, densities and manual prices to the defaults?")) return;
     Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit });
-    saveSettings(); fillSettings(); render();
+    saveSettings(); fillSettings(); fieldError($("sVat"), ""); render();
   });
 
   // ---------- share ----------
-  function quoteText() {
+  const today = () => new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const pieceName = () => mesh.name.replace(/\.stl$/i, "").replace(/[_]+/g, " ").trim();
+
+  // What the customer sees: no per-gram rates, spot price or cost lines.
+  function customerText() {
     const q = mesh.quote, k = settings.karat;
-    const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     return [
-      "Gold quote · " + k + "K (" + Math.round(FINENESS[k] * 1000) + ")",
-      mesh.example ? "Example ring band" : mesh.name,
+      pieceName(),
+      k + "K gold (" + Math.round(FINENESS[k] * 1000) + "), about " + fmt1.format(q.weight) + " g",
+      "Price: " + ils0(q.total) + " including VAT",
+      "Valid " + today() + ". Gold prices change daily.",
+    ].join("\n");
+  }
+
+  // Her own record: every line and the prices used.
+  function breakdownText() {
+    const q = mesh.quote, k = settings.karat;
+    const date = today();
+    return [
+      "Quote breakdown · " + k + "K (" + Math.round(FINENESS[k] * 1000) + ")",
+      mesh.name,
       "Weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
       "",
       "Fine gold: " + ils(q.gold) + " (" + grams(q.fine) + " × " + ils(q.goldIlsG) + ")",
@@ -826,24 +917,30 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       "VAT " + settings.vatPct + "%: " + ils(q.vat),
       "Total: " + ils(q.total) + " (≈ " + usd(q.totalUsd) + ")",
       "",
-      "Gold " + usd(goldOz()) + "/oz · $1 = ₪" + usdIls().toFixed(3) + " · " + date,
+      "Gold " + usd(goldOz()) + "/oz + " + settings.premiumPct + "% · $1 = ₪" + usdIls().toFixed(3) + " · " + date,
     ].join("\n");
   }
+  async function copyText(text, label, idle) {
+    try {
+      await navigator.clipboard.writeText(text);
+      label.textContent = "Copied";
+    } catch {
+      label.textContent = "Couldn't copy";
+    }
+    setTimeout(() => (label.textContent = idle), 1800);
+  }
   $("share").addEventListener("click", async () => {
-    if (!mesh || !mesh.quote) return;
-    const text = quoteText();
-    const btn = $("share");
+    if (!mesh || !mesh.quote || mesh.example) return;
+    const text = customerText();
     if (navigator.share) {
       try { await navigator.share({ text }); return; }
       catch (e) { if (e && e.name === "AbortError") return; }
     }
-    try {
-      await navigator.clipboard.writeText(text);
-      btn.textContent = "Copied";
-    } catch {
-      btn.textContent = "Couldn't copy";
-    }
-    setTimeout(() => (btn.textContent = "Share quote"), 1800);
+    copyText(text, $("shareText"), "Send quote to customer");
+  });
+  $("copyBd").addEventListener("click", () => {
+    if (!mesh || !mesh.quote || mesh.example) return;
+    copyText(breakdownText(), $("copyBd"), "Copy full breakdown for me");
   });
 
   // ---------- start ----------
@@ -853,7 +950,11 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && (!prices.checkedAt || Date.now() - prices.checkedAt > 10 * 60 * 1000)) refreshPrices();
   });
-  setInterval(() => { if (!loading) render(); }, 60 * 1000);
+  setInterval(() => {
+    if (loading) return;
+    if (document.visibilityState === "visible" && (!prices.checkedAt || Date.now() - prices.checkedAt > 10 * 60 * 1000)) refreshPrices();
+    else render();
+  }, 60 * 1000);
 })();
 </script>
 </body>
