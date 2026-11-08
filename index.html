@@ -123,13 +123,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .total-wrap { display: grid; gap: 10px; }
 .total { font-size: var(--t-total); font-weight: 300; letter-spacing: -.025em; line-height: 1.05; }
-.total .cur { font-family: var(--sym); font-size: .38em; font-weight: 300; vertical-align: 1em; margin-right: .14em; color: var(--muted); letter-spacing: 0; }
+.total .cur { font-family: var(--sym); font-size: .86em; font-weight: 200; margin-right: .1em; letter-spacing: 0; }
 .total .dash { margin: 0 .06em; color: var(--muted); }
 .total.long { font-size: calc(var(--t-total) * .82); }
 .total-sub { margin: 0; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
 .total-sub:empty { display: none; }
 .fresh { margin: 0; font-size: var(--t-sm); line-height: 1.45; color: var(--warn); }
-.note { margin: 0; font-size: var(--t-sm); line-height: 1.45; color: var(--muted); }
 
 /* Folded sections */
 .fold { border-bottom: 1px solid var(--line); }
@@ -230,7 +229,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <p class="total-sub" id="qUsd"></p>
     </div>
     <p class="fresh" id="qFresh" hidden></p>
-    <p class="note" id="quoteNote" hidden></p>
   </section>
 
   <details class="fold" id="breakdown">
@@ -742,7 +740,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal2", "qRange"], "—");
       setText(["nGold", "nLabor", "nPrint", "nRange", "qUsd"], "");
       setTotal("—");
-      $("quoteNote").hidden = true;
       return;
     }
     const st = mesh.stats, u = settings.unit;
@@ -781,7 +778,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       $("nLabor").textContent = grams(weight) + " × " + ils(settings.labor);
       $("nPrint").textContent = settings.printPct + "% of gold";
       $("qUsd").textContent = "Waiting for the gold price";
-      $("quoteNote").hidden = true;
       return;
     }
     const q = quote({ ...base, karat: k, density });
@@ -802,8 +798,6 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("nPrint").textContent = settings.printPct + "% of " + ils(q.gold);
     $("qSub").textContent = ils(q.subtotal);
     $("qVat").textContent = ils(q.vat);
-    $("quoteNote").hidden = !mesh.example;
-    $("quoteNote").textContent = mesh.example ? "Example piece. Choose your STL file to quote a real one." : "";
     copyBd.disabled = !!mesh.example;
   }
 
