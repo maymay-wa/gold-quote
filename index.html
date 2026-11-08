@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Raquel’s Little Helper</title>
-<meta name="description" content="Quote a gold piece from its STL file: weight, fine gold, live gold price, labor, printing fee and VAT.">
+<meta name="description" content="Quote a gold piece from its STL file: weight, fine gold, live gold price, printing fee and VAT.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -275,8 +275,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
     <summary>Price breakdown</summary>
     <div class="fold-body">
       <div class="line"><span>Gold</span><span class="amt" id="qGold">—</span></div>
-      <div class="line"><span>Sprue</span><span class="amt" id="qSprue">—</span></div>
-      <div class="line"><span>Labor</span><span class="amt" id="qLabor">—</span></div>
       <div class="line"><span>Printing</span><span class="amt" id="qPrint">—</span></div>
       <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
       <div class="line total"><span>Estimate</span><span class="amt" id="qTotal2">—</span></div>
@@ -294,19 +292,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <section class="set-group">
         <h3>Charges</h3>
         <label class="set-row"><span class="set-lbl">Gold premium</span><input id="sPremium" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
-        <label class="set-row"><span class="set-lbl">Labor</span><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"><span class="unit">₪/g</span></label>
-        <label class="set-row"><span class="set-lbl">Printing fee<small>of gold and sprue</small></span><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+        <label class="set-row"><span class="set-lbl">Printing fee<small>of gold cost</small></span><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
         <label class="set-row"><span class="set-lbl">VAT</span><input id="sVat" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
       </section>
       <section class="set-group">
         <h3>Quote range</h3>
         <label class="set-row"><span class="set-lbl">Under estimate</span><input id="sRangeLo" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
         <label class="set-row"><span class="set-lbl">Over estimate</span><input id="sRangeHi" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
-      </section>
-      <section class="set-group">
-        <h3>Sprue · one per piece</h3>
-        <label class="set-row"><span class="set-lbl">Diameter</span><input id="sSprueD" type="text" inputmode="decimal" autocomplete="off"><span class="unit">mm</span></label>
-        <label class="set-row"><span class="set-lbl">Length<small>piece to tree</small></span><input id="sSprueL" type="text" inputmode="decimal" autocomplete="off"><span class="unit">mm</span></label>
       </section>
       <section class="set-group">
         <h3>Alloy density</h3>
@@ -335,7 +327,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
   <footer class="foot">
     <p>Gold is charged on pure gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.</p>
-    <p>Weight is estimated from the model's volume and the alloy density. Sprue gold is estimated from the sprue size in Pricing settings. Casting loss isn't included.</p>
+    <p>Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.</p>
   </footer>
   </div>
 </main>
@@ -346,7 +338,7 @@ const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, sprueD: 3, sprueL: 8, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -466,10 +458,6 @@ function priceRange(total, loPct, hiPct) {
   return { lo: Math.floor((total * (1 - loPct / 100)) / step) * step, hi: Math.ceil((total * (1 + hiPct / 100)) / step) * step, step };
 }
 
-// One sprue per piece, a rod: π r² × length, in mm. Returns cm³.
-const sprueVolume = (diameterMm, lengthMm) => (Math.PI * (diameterMm / 2) ** 2 * lengthMm) / 1000;
-
-// The casting house bills the sprue's metal too, so its gold is charged like the piece's. Labor is on the finished piece only.
 // Whole shekels for display: largest remainder, so the shown lines add up exactly to the rounded total.
 function wholeShekels(parts, total) {
   const target = Math.round(total);
@@ -480,20 +468,16 @@ function wholeShekels(parts, total) {
   return { parts: out, total: target };
 }
 
-function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls, sprueCm3 = 0 }) {
+function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, goldUsdOz, usdIls }) {
   const weight = volumeCm3 * density;
   const fine = weight * FINENESS[karat];
-  const sprueWeight = sprueCm3 * density;
-  const sprueFine = sprueWeight * FINENESS[karat];
   const goldIlsG = (goldUsdOz / TROY_OZ_G) * usdIls * (1 + premiumPct / 100);
   const gold = round2(fine * goldIlsG);
-  const sprue = round2(sprueFine * goldIlsG);
-  const laborCost = round2(weight * labor);
-  const printing = round2((gold + sprue) * printPct / 100);
-  const subtotal = round2(gold + sprue + laborCost + printing);
+  const printing = round2(gold * printPct / 100);
+  const subtotal = round2(gold + printing);
   const vat = round2(subtotal * vatPct / 100);
   const total = round2(subtotal + vat);
-  return { weight, fine, sprueWeight, sprueFine, goldIlsG, gold, sprue, labor: laborCost, printing, subtotal, vat, total, totalUsd: total / usdIls };
+  return { weight, fine, goldIlsG, gold, printing, subtotal, vat, total, totalUsd: total / usdIls };
 }
 // @pure-end
 
@@ -807,7 +791,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("exTag").hidden = !mesh || !mesh.example;
     if (!mesh) {
       $("volSub").textContent = "volume";
-      setText(["dims", "vol", "weight", "fine", "qGold", "qSprue", "qLabor", "qPrint", "qVat", "qTotal2"], "—");
+      setText(["dims", "vol", "weight", "fine", "qGold", "qPrint", "qVat", "qTotal2"], "—");
       $("qUsd").textContent = "";
       setTotal("—");
       $("detail").replaceChildren();
@@ -839,12 +823,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("fine").innerHTML = fig(fmt2.format(fine), "g");
     $("fineSub").textContent = "pure gold";
 
-    const sprueCm3 = sprueVolume(settings.sprueD, settings.sprueL);
-    const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx, sprueCm3 };
+    const base = { volumeCm3, premiumPct: settings.premiumPct, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx };
     if (!gOz || !fx) {
-      setText(["qGold", "qSprue", "qPrint", "qVat", "qTotal2"], "—");
+      setText(["qGold", "qPrint", "qVat", "qTotal2"], "—");
       setTotal("—");
-      $("qLabor").textContent = ils0(weight * settings.labor);
       $("qUsd").textContent = "Waiting for the gold price";
       $("detail").replaceChildren();
       return;
@@ -857,8 +839,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     $("qTotal").classList.toggle("long", rg.hi >= 10000);
     $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
     showDetails(q, rg, { spotG, gOver, fOver, fx });
-    const shown = wholeShekels([q.gold, q.sprue, q.labor, q.printing, q.vat], q.total);
-    ["qGold", "qSprue", "qLabor", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
+    const shown = wholeShekels([q.gold, q.printing, q.vat], q.total);
+    ["qGold", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
     $("qTotal2").textContent = ils0(shown.total);
   }
 
@@ -877,13 +859,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
 
   const numFields = [
     ["sPremium", () => settings.premiumPct, (v) => (settings.premiumPct = v)],
-    ["sLabor", () => settings.labor, (v) => (settings.labor = v)],
     ["sPrint", () => settings.printPct, (v) => (settings.printPct = v)],
     ["sVat", () => settings.vatPct, (v) => (settings.vatPct = v)],
     ["sRangeLo", () => settings.rangeLo, (v) => (settings.rangeLo = v)],
     ["sRangeHi", () => settings.rangeHi, (v) => (settings.rangeHi = v)],
-    ["sSprueD", () => settings.sprueD, (v) => (settings.sprueD = v)],
-    ["sSprueL", () => settings.sprueL, (v) => (settings.sprueL = v)],
     ["sD9", () => settings.dens[9], (v) => (settings.dens[9] = v)],
     ["sD14", () => settings.dens[14], (v) => (settings.dens[14] = v)],
     ["sD18", () => settings.dens[18], (v) => (settings.dens[18] = v)],
@@ -895,8 +874,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   }
   // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
   const RANGES = {
-    sPremium: [0, 50, "Gold premium", "%"], sLabor: [0, 1000, "Labor", " ₪/g"], sPrint: [0, 50, "Printing fee", "%"],
-    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Under estimate", "%"], sRangeHi: [0, 30, "Over estimate", "%"], sSprueD: [0.5, 8, "Sprue diameter", " mm"], sSprueL: [1, 30, "Sprue length", " mm"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
+    sPremium: [0, 50, "Gold premium", "%"], sPrint: [0, 50, "Printing fee", "%"],
+    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Under estimate", "%"], sRangeHi: [0, 30, "Over estimate", "%"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
     sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
   };
   function fieldError(input, msg) {
@@ -937,7 +916,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     });
   });
   $("reset").addEventListener("click", () => {
-    if (!confirm("Reset premium, labor, printing fee, VAT, quote range, sprue, densities and manual prices to the defaults?")) return;
+    if (!confirm("Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?")) return;
     Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit });
     saveSettings(); fillSettings(); fieldError($("sVat"), ""); render();
   });
@@ -945,12 +924,10 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   // ---------- more details ----------
   // Every number behind the quote, exact to the agora.
   function showDetails(q, rg, { spotG, gOver, fOver, fx }) {
-    const k = settings.karat, rows = [];
+    const rows = [];
     const add = (label, note, value) => rows.push([label, note, value]);
     add("Gold", grams(q.fine) + " pure × " + ils(q.goldIlsG) + "/g", ils(q.gold));
-    add("Sprue", grams(q.sprueWeight) + " " + k + "K (" + grams(q.sprueFine) + " pure), " + fmt1.format(settings.sprueD) + " × " + fmt1.format(settings.sprueL) + " mm", ils(q.sprue));
-    add("Labor", grams(q.weight) + " × " + ils(settings.labor) + "/g", ils(q.labor));
-    add("Printing", settings.printPct + "% of " + ils(q.gold + q.sprue) + " gold and sprue", ils(q.printing));
+    add("Printing", settings.printPct + "% of " + ils(q.gold) + " gold", ils(q.printing));
     add("Before VAT", "", ils(q.subtotal));
     add("VAT", settings.vatPct + "% of " + ils(q.subtotal), ils(q.vat));
     add("Estimate", "exact", ils(q.total));
