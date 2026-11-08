@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gold Quote</title>
+<meta name="description" content="Quote a gold piece from its STL file: weight, fine gold, live gold price, labor, printing fee and VAT.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Gold Quote">
+<meta name="theme-color" content="#EFF0F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121317" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2394680F'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='28' font-weight='700' text-anchor='middle' fill='%23F4EAD0'%3EAu%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one thumb-width column. Prices, file, alloy + scale readout, quote, settings. */
+:root {
+  --bg: #EFF0F2;
+  --surface: #FFFFFF;
+  --ink: #191B20;
+  --muted: #5F6570;
+  --line: #DCDFE4;
+  --gold: #94680F;
+  --gold-soft: #F4EAD0;
+  --gold-ink: #5A3F08;
+  --stage: #E4E6EA;
+  --stage-hi: #F8F9FA;
+  --warn: #9C3F15;
+  --warn-soft: #FBE8DD;
+  --ok: #2E7A4B;
+  --font-body: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-data: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121317;
+    --surface: #1B1C21;
+    --ink: #ECEAE4;
+    --muted: #9A9EA8;
+    --line: #2B2D34;
+    --gold: #D9AD52;
+    --gold-soft: #2C2515;
+    --gold-ink: #F1D894;
+    --stage: #15161A;
+    --stage-hi: #262830;
+    --warn: #F09A72;
+    --warn-soft: #3A2216;
+    --ok: #6CC08E;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 480px; margin: 0 auto; display: grid; gap: 12px; padding-block: 14px 28px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+
+/* Header */
+.top { display: flex; align-items: center; gap: 10px; padding-block: 4px 2px; }
+.stamp {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px;
+  border: 1.5px solid var(--gold); color: var(--gold);
+  font: 500 15px/1 var(--font-data); letter-spacing: -.02em;
+}
+h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Price strip */
+.rates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 4px 14px; align-items: start; }
+.rate { display: grid; gap: 1px; min-width: 0; }
+.rate .val { font-size: 20px; font-weight: 500; letter-spacing: -.02em; }
+.rate .val small { font-size: 13px; color: var(--muted); font-weight: 400; }
+.rate .meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.refresh {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--bg); display: grid; place-items: center; padding: 0;
+}
+.refresh svg { width: 20px; height: 20px; }
+.refresh.spin svg { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.rate-status { grid-column: 1 / -1; margin: 8px 0 0; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.dot.live { background: var(--ok); }
+.dot.stale { background: var(--warn); }
+
+/* File + model */
+.pick {
+  position: relative; display: grid; gap: 2px; place-items: center; text-align: center;
+  min-height: 78px; padding: 14px; border: 1.5px dashed var(--gold); border-radius: 12px;
+  background: var(--gold-soft); color: var(--gold-ink); cursor: pointer;
+}
+.pick:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pick.drag { border-style: solid; }
+.pick-main { font-weight: 700; font-size: 17px; }
+.pick-sub { font-size: 13px; opacity: .85; }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); }
+
+.model { display: grid; gap: 12px; margin-top: 14px; }
+#view {
+  display: block; width: 100%; height: 210px; border-radius: 12px;
+  background: radial-gradient(circle at 50% 42%, var(--stage-hi), var(--stage) 75%);
+  touch-action: none; cursor: grab;
+}
+#view:active { cursor: grabbing; }
+.model-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fname { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag {
+  flex: none; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold-ink);
+}
+.hint { margin-left: auto; flex: none; font-size: 12px; color: var(--muted); }
+
+.rows { margin: 0; display: grid; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 8px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row > :first-child { min-width: 0; }
+.row dt, .row dd { margin: 0; }
+.row dt { color: var(--muted); font-size: 14px; }
+.row dd { text-align: right; font-size: 14.5px; }
+
+.warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+
+.seg { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.seg .lbl { margin-right: auto; }
+.chip {
+  min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
+  background: transparent; font-weight: 500; font-size: 15px;
+}
+.chip[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Alloy */
+.karats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.karat {
+  display: grid; place-items: center; gap: 1px; min-height: 66px; padding: 8px 4px;
+  border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface);
+}
+.karat b { font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+.karat span { font-family: var(--font-data); font-size: 12px; color: var(--muted); letter-spacing: .08em; }
+.karat[aria-checked="true"] { border-color: var(--gold); background: var(--gold-soft); color: var(--gold-ink); }
+.karat[aria-checked="true"] span { color: var(--gold-ink); }
+
+.scale { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.scale > div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--bg); min-width: 0; }
+.big { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 25px; font-weight: 500; letter-spacing: -.03em; }
+.scale .sub { font-size: 12px; color: var(--muted); font-family: var(--font-data); }
+
+/* Quote */
+.line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 9px; border-bottom: 1px solid var(--line); }
+.line > :first-child { min-width: 0; }
+.line small { display: block; font-size: 12.5px; color: var(--muted); font-family: var(--font-data); overflow-wrap: anywhere; }
+.line .num { white-space: nowrap; }
+.line.subtotal { font-weight: 600; }
+.total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 14px; }
+.total > span:first-child { font-weight: 700; font-size: 18px; }
+.total .num { font-size: 34px; font-weight: 500; color: var(--gold); letter-spacing: -.04em; white-space: nowrap; }
+.usd { text-align: right; color: var(--muted); font-size: 14px; }
+.quote-note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+.share {
+  margin-top: 14px; width: 100%; min-height: 52px; border-radius: 12px; border: 0;
+  background: var(--ink); color: var(--bg); font-weight: 600; font-size: 17px;
+}
+.share:disabled { opacity: .45; cursor: default; }
+
+/* Settings */
+.settings summary {
+  list-style: none; display: flex; justify-content: space-between; align-items: center;
+  min-height: 28px; font-weight: 600; cursor: pointer;
+}
+.settings summary::-webkit-details-marker { display: none; }
+.settings summary::after { content: "+"; font: 400 22px/1 var(--font-data); color: var(--muted); }
+.settings[open] summary::after { content: "−"; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; margin-top: 14px; }
+.field { display: grid; gap: 4px; font-size: 14px; font-weight: 600; min-width: 0; align-content: start; }
+.field small { font-weight: 400; color: var(--muted); font-size: 12px; }
+.field input {
+  width: 100%; min-width: 0; font: 16px var(--font-data); padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.field.wide { grid-column: 1 / -1; }
+.fields h3 { grid-column: 1 / -1; margin: 6px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.reset { margin-top: 16px; min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; font-size: 15px; }
+
+.foot { font-size: 12.5px; color: var(--muted); line-height: 1.5; padding-inline: 4px; }
+.foot p { margin: 0 0 6px; max-width: 65ch; }
+.foot a { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) { .refresh.spin svg { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <span class="stamp" aria-hidden="true">Au</span>
+    <h1>Gold Quote</h1>
+  </header>
+
+  <section class="card rates" aria-label="Prices">
+    <div class="rate">
+      <span class="lbl">Gold spot</span>
+      <span class="val num" id="goldOz">—</span>
+      <span class="meta num" id="goldG">—</span>
+    </div>
+    <div class="rate">
+      <span class="lbl">USD → ILS</span>
+      <span class="val num" id="fxVal">—</span>
+      <span class="meta" id="fxMeta">—</span>
+    </div>
+    <button class="refresh" id="refresh" type="button" aria-label="Refresh prices">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
+    <p class="rate-status" id="rateStatus" role="status"><span class="dot" id="rateDot"></span><span id="rateText">Loading prices…</span></p>
+  </section>
+
+  <section class="card" aria-label="Model">
+    <label class="pick" id="pick">
+      <input type="file" id="stl" class="vh">
+      <span class="pick-main">Choose STL file</span>
+      <span class="pick-sub">Read on this device. Never uploaded.</span>
+    </label>
+    <div class="model">
+      <canvas id="view" aria-label="3D preview. Drag to rotate."></canvas>
+      <div class="model-head">
+        <span class="fname" id="fname">Ring band</span>
+        <span class="tag" id="exTag">Example</span>
+        <span class="hint">Drag to rotate</span>
+      </div>
+      <dl class="rows">
+        <div class="row"><dt>Size</dt><dd class="num" id="dims">—</dd></div>
+        <div class="row"><dt>Volume</dt><dd class="num" id="vol">—</dd></div>
+        <div class="row"><dt>Triangles</dt><dd class="num" id="tris">—</dd></div>
+      </dl>
+      <p class="warn" id="meshWarn" hidden></p>
+      <div class="seg" id="units" role="radiogroup" aria-label="File units">
+        <span class="lbl">File units</span>
+        <button type="button" class="chip" role="radio" data-u="mm">mm</button>
+        <button type="button" class="chip" role="radio" data-u="cm">cm</button>
+        <button type="button" class="chip" role="radio" data-u="in">inch</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Alloy">
+    <h2>Alloy</h2>
+    <div class="karats" id="karats" role="radiogroup" aria-label="Gold alloy">
+      <button type="button" class="karat" role="radio" data-k="9"><b>9K</b><span>375</span></button>
+      <button type="button" class="karat" role="radio" data-k="14"><b>14K</b><span>585</span></button>
+      <button type="button" class="karat" role="radio" data-k="18"><b>18K</b><span>750</span></button>
+    </div>
+    <div class="scale">
+      <div><span class="lbl">Piece weight</span><span class="big" id="weight">—</span><span class="sub" id="weightSub">—</span></div>
+      <div><span class="lbl">Fine gold</span><span class="big" id="fine">—</span><span class="sub" id="fineSub">—</span></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Quote">
+    <h2>Quote</h2>
+    <div class="line"><span>Fine gold<small id="nGold">—</small></span><span class="num" id="qGold">—</span></div>
+    <div class="line"><span>Labor<small id="nLabor">—</small></span><span class="num" id="qLabor">—</span></div>
+    <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="num" id="qPrint">—</span></div>
+    <div class="line subtotal"><span>Before VAT</span><span class="num" id="qSub">—</span></div>
+    <div class="line"><span id="lVat">VAT</span><span class="num" id="qVat">—</span></div>
+    <div class="total"><span>Total</span><span class="num" id="qTotal">—</span></div>
+    <div class="usd num" id="qUsd"></div>
+    <p class="quote-note" id="quoteNote" hidden></p>
+    <button class="share" id="share" type="button">Share quote</button>
+  </section>
+
+  <details class="card settings" id="settings">
+    <summary>Pricing settings</summary>
+    <div class="fields">
+      <label class="field">Labor<small>₪ per gram of piece</small><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label class="field">Printing fee<small>% of gold cost</small><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label class="field">VAT<small>% on the full total</small><input id="sVat" type="text" inputmode="decimal" autocomplete="off"></label>
+      <h3>Density, g/cm³</h3>
+      <label class="field">9K<small>yellow ≈ 11.2</small><input id="sD9" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label class="field">14K<small>yellow ≈ 13.1</small><input id="sD14" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label class="field">18K<small>yellow ≈ 15.5</small><input id="sD18" type="text" inputmode="decimal" autocomplete="off"></label>
+      <h3>Manual prices</h3>
+      <label class="field">Gold<small>$ per troy oz. Blank = live</small><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
+      <label class="field">USD → ILS<small>Blank = live</small><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"></label>
+    </div>
+    <button type="button" class="reset" id="reset">Reset to defaults</button>
+  </details>
+
+  <footer class="foot">
+    <p>Gold is charged on fine gold content only, at spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a>. The exchange rate comes from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">ExchangeRate-API</a>, or the ECB rate if that's unavailable.</p>
+    <p>Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.</p>
+  </footer>
+</main>
+
+<script>
+// @pure-start
+const TROY_OZ_G = 31.1034768;
+const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
+const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
+const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
+const DEFAULTS = { labor: 35, printPct: 5, vatPct: 18, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+
+// Returns a Float32Array of triangle vertices: 9 floats per triangle.
+function parseSTL(buf) {
+  const bytes = buf.byteLength;
+  const dv = new DataView(buf);
+  if (bytes >= 84) {
+    const n = dv.getUint32(80, true);
+    if (n > 0 && 84 + n * 50 === bytes) return readBinary(dv, n);
+  }
+  const head = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(bytes, 512)));
+  if (/^\s*solid\b/i.test(head)) {
+    const pos = readAscii(new TextDecoder().decode(new Uint8Array(buf)));
+    if (pos.length) return pos;
+  }
+  if (bytes >= 84) {
+    const n = dv.getUint32(80, true);
+    if (n > 0 && 84 + n * 50 <= bytes) return readBinary(dv, n);
+  }
+  throw new Error("This doesn't look like an STL file.");
+}
+function readBinary(dv, n) {
+  const pos = new Float32Array(n * 9);
+  for (let i = 0, o = 84; i < n; i++, o += 50) {
+    const b = i * 9;
+    for (let k = 0; k < 9; k++) pos[b + k] = dv.getFloat32(o + 12 + k * 4, true);
+  }
+  return pos;
+}
+function readAscii(text) {
+  const re = /vertex\s+(\S+)\s+(\S+)\s+(\S+)/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(text))) out.push(+m[1], +m[2], +m[3]);
+  const usable = out.length - (out.length % 9);
+  return Float32Array.from(usable === out.length ? out : out.slice(0, usable));
+}
+
+// Bounding box, plus signed volume from tetrahedra against the box center (keeps precision for models far from the origin).
+function meshStats(pos) {
+  let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+  for (let i = 0; i < pos.length; i += 3) {
+    const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+    if (x < x0) x0 = x; if (x > x1) x1 = x;
+    if (y < y0) y0 = y; if (y > y1) y1 = y;
+    if (z < z0) z0 = z; if (z > z1) z1 = z;
+  }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, cz = (z0 + z1) / 2;
+  let v6 = 0;
+  for (let i = 0; i < pos.length; i += 9) {
+    const ax = pos[i] - cx, ay = pos[i + 1] - cy, az = pos[i + 2] - cz;
+    const bx = pos[i + 3] - cx, by = pos[i + 4] - cy, bz = pos[i + 5] - cz;
+    const qx = pos[i + 6] - cx, qy = pos[i + 7] - cy, qz = pos[i + 8] - cz;
+    v6 += ax * (by * qz - bz * qy) + ay * (bz * qx - bx * qz) + az * (bx * qy - by * qx);
+  }
+  return {
+    tris: pos.length / 9,
+    signedVolume: v6 / 6,
+    volume: Math.abs(v6) / 6,
+    size: [x1 - x0, y1 - y0, z1 - z0],
+    center: [cx, cy, cz],
+  };
+}
+
+// Watertight check: every edge should be shared by exactly two triangles.
+function edgeCheck(pos) {
+  const nv = pos.length / 3;
+  const ids = new Uint32Array(nv);
+  const vmap = new Map();
+  let next = 0;
+  for (let v = 0; v < nv; v++) {
+    const o = v * 3;
+    const key = pos[o] + "," + pos[o + 1] + "," + pos[o + 2];
+    let id = vmap.get(key);
+    if (id === undefined) { id = next++; vmap.set(key, id); }
+    ids[v] = id;
+  }
+  const edges = new Map();
+  const add = (a, b) => {
+    if (a === b) return;
+    const k = a < b ? a * next + b : b * next + a;
+    edges.set(k, (edges.get(k) || 0) + 1);
+  };
+  for (let t = 0; t < nv; t += 3) {
+    add(ids[t], ids[t + 1]); add(ids[t + 1], ids[t + 2]); add(ids[t + 2], ids[t]);
+  }
+  let open = 0, nonManifold = 0;
+  for (const c of edges.values()) { if (c === 1) open++; else if (c > 2) nonManifold++; }
+  return { open, nonManifold };
+}
+
+// Example piece: a flat ring band, rectangular cross-section, axis along Z. Sizes in mm.
+function ringBand(inner = 17, width = 3, thick = 1.6, seg = 128) {
+  const r1 = inner / 2, r2 = r1 + thick, h = width / 2;
+  const out = [];
+  const P = (r, a, z) => [r * Math.cos(a), r * Math.sin(a), z];
+  const quad = (a, b, c, d) => out.push(...a, ...b, ...c, ...a, ...c, ...d);
+  for (let i = 0; i < seg; i++) {
+    const a0 = (i / seg) * 2 * Math.PI, a1 = (((i + 1) % seg) / seg) * 2 * Math.PI;
+    const o0b = P(r2, a0, -h), o1b = P(r2, a1, -h), o1t = P(r2, a1, h), o0t = P(r2, a0, h);
+    const i0b = P(r1, a0, -h), i1b = P(r1, a1, -h), i1t = P(r1, a1, h), i0t = P(r1, a0, h);
+    quad(o0b, o1b, o1t, o0t);
+    quad(i1b, i0b, i0t, i1t);
+    quad(o0t, o1t, i1t, i0t);
+    quad(i0b, i1b, o1b, o0b);
+  }
+  return Float32Array.from(out);
+}
+
+const round2 = (v) => Math.round(v * 100) / 100;
+
+// Each line is rounded to agorot so the shown lines add up exactly to the total.
+function quote({ volumeCm3, karat, density, labor, printPct, vatPct, goldUsdOz, usdIls }) {
+  const weight = volumeCm3 * density;
+  const fine = weight * FINENESS[karat];
+  const goldIlsG = (goldUsdOz / TROY_OZ_G) * usdIls;
+  const gold = round2(fine * goldIlsG);
+  const laborCost = round2(weight * labor);
+  const printing = round2(gold * printPct / 100);
+  const subtotal = round2(gold + laborCost + printing);
+  const vat = round2(subtotal * vatPct / 100);
+  const total = round2(subtotal + vat);
+  return { weight, fine, goldIlsG, gold, labor: laborCost, printing, subtotal, vat, total, totalUsd: total / usdIls };
+}
+// @pure-end
+
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const fmt2 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt1 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmt3 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const ils = (v) => "₪" + fmt2.format(v);
+  const usd = (v) => "$" + fmt2.format(v);
+  const grams = (v) => fmt2.format(v) + " g";
+
+  // ---------- storage (optional; the page works without it) ----------
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  const saved = store.get("gq.settings") || {};
+  const settings = { ...DEFAULTS, ...saved, dens: { ...DEFAULTS.dens, ...(saved.dens || {}) } };
+  if (!FINENESS[settings.karat]) settings.karat = DEFAULTS.karat;
+  if (!UNIT_TO_CM3[settings.unit]) settings.unit = DEFAULTS.unit;
+  const prices = store.get("gq.prices") || {};
+  const saveSettings = () => store.set("gq.settings", settings);
+
+  let mesh = null;
+
+  // ---------- prices ----------
+  async function getJSON(url) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 9000);
+    try {
+      const r = await fetch(url, { signal: ctl.signal, cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally { clearTimeout(timer); }
+  }
+  async function loadGold() {
+    const j = await getJSON("https://api.gold-api.com/price/XAU");
+    const p = Number(j && j.price);
+    if (!(p > 0)) throw new Error("No gold price in the response");
+    return { oz: p, at: Date.parse(j.updatedAt) || Date.now() };
+  }
+  async function loadFx() {
+    try {
+      const j = await getJSON("https://open.er-api.com/v6/latest/USD");
+      const r = Number(j && j.rates && j.rates.ILS);
+      if (!(r > 0)) throw new Error("No ILS rate");
+      return { rate: r, at: (j.time_last_update_unix || 0) * 1000 || Date.now(), src: "ExchangeRate-API" };
+    } catch {
+      const j = await getJSON("https://api.frankfurter.dev/v1/latest?from=USD&to=ILS");
+      const r = Number(j && j.rates && j.rates.ILS);
+      if (!(r > 0)) throw new Error("No ILS rate");
+      return { rate: r, at: Date.parse(j.date) || Date.now(), src: "ECB" };
+    }
+  }
+
+  let loading = false;
+  async function refreshPrices() {
+    if (loading) return;
+    loading = true;
+    $("refresh").classList.add("spin");
+    $("refresh").disabled = true;
+    setStatus("", "Updating prices…");
+    const [g, f] = await Promise.allSettled([loadGold(), loadFx()]);
+    if (g.status === "fulfilled") { prices.goldOz = g.value.oz; prices.goldAt = g.value.at; }
+    if (f.status === "fulfilled") { prices.fx = f.value.rate; prices.fxAt = f.value.at; prices.fxSrc = f.value.src; }
+    prices.checkedAt = Date.now();
+    prices.lastOk = g.status === "fulfilled" && f.status === "fulfilled";
+    store.set("gq.prices", prices);
+    loading = false;
+    $("refresh").classList.remove("spin");
+    $("refresh").disabled = false;
+    render();
+  }
+
+  function ago(ms) {
+    const s = (Date.now() - ms) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.round(s / 60) + " min ago";
+    if (s < 86400) return Math.round(s / 3600) + " h ago";
+    return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+  function day(ms) {
+    const d = new Date(ms), now = new Date();
+    if (d.toDateString() === now.toDateString()) return "today";
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+  function setStatus(kind, text) {
+    $("rateDot").className = "dot" + (kind ? " " + kind : "");
+    $("rateText").textContent = text;
+  }
+  const parseNum = (s) => {
+    const v = parseFloat(String(s).replace(",", ".").trim());
+    return Number.isFinite(v) && v >= 0 ? v : null;
+  };
+  const goldOz = () => parseNum(settings.goldOverride) || prices.goldOz || null;
+  const usdIls = () => parseNum(settings.fxOverride) || prices.fx || null;
+
+  // ---------- preview ----------
+  const cv = $("view");
+  const view = { n: 0, tri: null, yaw: -0.6, pitch: 0.62, rad: 1, raf: 0 };
+  const PALETTE = Array.from({ length: 64 }, (_, i) => {
+    const k = i / 63;
+    const r = Math.min(255, Math.round(70 + 185 * k + 40 * k * k * k));
+    const g = Math.min(255, Math.round(46 + 150 * k + 40 * k * k * k));
+    const b = Math.min(255, Math.round(12 + 70 * k + 60 * k * k * k));
+    return `rgb(${r},${g},${b})`;
+  });
+
+  function setPreview(pos, st) {
+    const n = st.tris;
+    const stride = Math.max(1, Math.ceil(n / 20000));
+    const t = new Float32Array(Math.ceil(n / stride) * 9);
+    const [cx, cy, cz] = st.center;
+    const flip = st.signedVolume < 0;
+    const order = flip ? [0, 2, 1] : [0, 1, 2];
+    let k = 0, rad = 0;
+    for (let i = 0; i < n; i += stride) {
+      for (let v = 0; v < 3; v++) {
+        const s = i * 9 + order[v] * 3;
+        const x = pos[s] - cx, y = pos[s + 1] - cy, z = pos[s + 2] - cz;
+        t[k++] = x; t[k++] = z; t[k++] = -y; // Z-up model → Y-up view
+        const d = x * x + y * y + z * z;
+        if (d > rad) rad = d;
+      }
+    }
+    view.tri = t;
+    view.n = k / 9;
+    view.rad = Math.sqrt(rad) || 1;
+    view.proj = new Float32Array(view.n * 6);
+    view.depth = new Float32Array(view.n);
+    view.shade = new Uint8Array(view.n);
+    view.order = new Uint32Array(view.n);
+    schedule();
+  }
+  function schedule() { if (!view.raf) view.raf = requestAnimationFrame(draw); }
+
+  function draw() {
+    view.raf = 0;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    }
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (!view.n) return;
+    const cyw = Math.cos(view.yaw), syw = Math.sin(view.yaw);
+    const cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+    const s = (Math.min(W, H) * 0.44) / view.rad, ox = W / 2, oy = H / 2;
+    const { tri: t, proj, depth, shade, order } = view;
+    const L = [-0.35, 0.62, 0.7], Ll = Math.hypot(...L);
+    const P = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let vis = 0;
+    for (let i = 0; i < view.n; i++) {
+      const b = i * 9;
+      for (let v = 0; v < 3; v++) {
+        const x = t[b + v * 3], y = t[b + v * 3 + 1], z = t[b + v * 3 + 2];
+        const x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
+        P[v * 3] = x1; P[v * 3 + 1] = y * cp - z1 * sp; P[v * 3 + 2] = y * sp + z1 * cp;
+      }
+      const ux = P[3] - P[0], uy = P[4] - P[1], uz = P[5] - P[2];
+      const wx = P[6] - P[0], wy = P[7] - P[1], wz = P[8] - P[2];
+      const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+      if (nz <= 0) continue;
+      const len = Math.hypot(nx, ny, nz) || 1;
+      const d = Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / (len * Ll));
+      const rim = Math.pow(1 - nz / len, 2) * 0.25;
+      shade[i] = Math.min(63, Math.round((0.22 + 0.78 * d + rim) * 63));
+      depth[i] = P[2] + P[5] + P[8];
+      const o = i * 6;
+      proj[o] = ox + P[0] * s; proj[o + 1] = oy - P[1] * s;
+      proj[o + 2] = ox + P[3] * s; proj[o + 3] = oy - P[4] * s;
+      proj[o + 4] = ox + P[6] * s; proj[o + 5] = oy - P[7] * s;
+      order[vis++] = i;
+    }
+    const list = order.subarray(0, vis);
+    list.sort((a, b) => depth[a] - depth[b]);
+    ctx.lineWidth = 0.6;
+    ctx.lineJoin = "round";
+    for (let j = 0; j < vis; j++) {
+      const i = list[j], o = i * 6;
+      ctx.beginPath();
+      ctx.moveTo(proj[o], proj[o + 1]);
+      ctx.lineTo(proj[o + 2], proj[o + 3]);
+      ctx.lineTo(proj[o + 4], proj[o + 5]);
+      ctx.closePath();
+      const c = PALETTE[shade[i]];
+      ctx.fillStyle = c; ctx.strokeStyle = c;
+      ctx.fill(); ctx.stroke();
+    }
+  }
+
+  let drag = null;
+  cv.addEventListener("pointerdown", (e) => {
+    drag = { x: e.clientX, y: e.clientY, yaw: view.yaw, pitch: view.pitch };
+    try { cv.setPointerCapture(e.pointerId); } catch {}
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    view.yaw = drag.yaw + (e.clientX - drag.x) * 0.012;
+    view.pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.012));
+    schedule();
+  });
+  const endDrag = () => { drag = null; };
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  window.addEventListener("resize", schedule);
+
+  // ---------- mesh loading ----------
+  function loadMesh(pos, name, example) {
+    const st = meshStats(pos);
+    mesh = { pos, name, example, stats: st, edges: null };
+    $("fname").textContent = name;
+    $("exTag").hidden = !example;
+    setPreview(pos, st);
+    render();
+    setTimeout(() => {
+      if (!mesh || mesh.pos !== pos || st.tris > 2000000) return;
+      mesh.edges = edgeCheck(pos);
+      render();
+    }, 40);
+  }
+
+  async function openFile(file) {
+    if (!file) return;
+    $("fname").textContent = "Reading " + file.name + "…";
+    $("exTag").hidden = true;
+    try {
+      const buf = await file.arrayBuffer();
+      const pos = parseSTL(buf);
+      if (!pos.length) throw new Error("No triangles found in this file.");
+      loadMesh(pos, file.name, false);
+    } catch (err) {
+      mesh = null;
+      view.n = 0; schedule();
+      $("fname").textContent = file.name;
+      render();
+      showWarn("Couldn't read this file. " + (err && err.message ? err.message : "") + " Export it as STL and try again.");
+    }
+  }
+  $("stl").addEventListener("change", (e) => { openFile(e.target.files[0]); e.target.value = ""; });
+  const pick = $("pick");
+  ["dragenter", "dragover"].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); pick.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); pick.classList.remove("drag"); }));
+  document.addEventListener("drop", (e) => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) openFile(f); });
+
+  function showWarn(text) {
+    const w = $("meshWarn");
+    w.hidden = !text;
+    w.textContent = text || "";
+  }
+
+  // ---------- render ----------
+  function render() {
+    // prices
+    const gOz = goldOz(), fx = usdIls();
+    const gOver = parseNum(settings.goldOverride), fOver = parseNum(settings.fxOverride);
+    $("goldOz").innerHTML = gOz ? usd(gOz) + "<small>/oz</small>" : "—";
+    $("goldG").textContent = gOz && fx ? ils((gOz / TROY_OZ_G) * fx) + "/g fine" : gOz ? usd(gOz / TROY_OZ_G) + "/g fine" : "No price yet";
+    $("fxVal").textContent = fx ? "₪" + fx.toFixed(3) : "—";
+    $("fxMeta").textContent = fOver ? "Manual rate" : prices.fx ? (prices.fxSrc === "ECB" ? "ECB" : "Daily") + " rate · " + day(prices.fxAt) : "No rate yet";
+    if (!loading) {
+      if (gOver || fOver) setStatus("stale", "Using your manual " + (gOver && fOver ? "gold price and rate" : gOver ? "gold price" : "exchange rate") + " from Pricing settings.");
+      else if (!gOz || !fx) setStatus("stale", "Couldn't load prices. Check your connection, or enter them in Pricing settings.");
+      else if (prices.lastOk) setStatus("live", "Live · gold updated " + ago(prices.goldAt));
+      else setStatus("stale", "Offline. Using prices saved " + ago(prices.checkedAt || prices.goldAt) + ".");
+    }
+
+    // toggles
+    document.querySelectorAll("#units .chip").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
+    document.querySelectorAll("#karats .karat").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
+
+    // model
+    const share = $("share");
+    if (!mesh) {
+      ["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal"].forEach((id) => ($(id).textContent = "—"));
+      ["weightSub", "fineSub", "nGold", "nLabor", "nPrint"].forEach((id) => ($(id).textContent = ""));
+      $("qUsd").textContent = "";
+      share.disabled = true;
+      return;
+    }
+    const st = mesh.stats, u = settings.unit;
+    const mm = st.size.map((d) => d * UNIT_TO_MM[u]);
+    $("dims").textContent = mm.map((d) => fmt1.format(d)).join(" × ") + " mm";
+    const volumeCm3 = st.volume * UNIT_TO_CM3[u];
+    $("vol").textContent = fmt3.format(volumeCm3) + " cm³";
+    $("tris").textContent = st.tris.toLocaleString("en-US");
+
+    const warns = [];
+    const maxMm = Math.max(...mm);
+    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units below.");
+    else if (maxMm > 250) warns.push("This model is over 25 cm across, which is large for jewelry. Check File units below.");
+    if (mesh.edges && (mesh.edges.open || mesh.edges.nonManifold)) {
+      const parts = [];
+      if (mesh.edges.open) parts.push(mesh.edges.open.toLocaleString("en-US") + " open edges");
+      if (mesh.edges.nonManifold) parts.push(mesh.edges.nonManifold.toLocaleString("en-US") + " non-manifold edges");
+      warns.push("The mesh isn't watertight (" + parts.join(", ") + "), so the volume may be off. Repair it in your CAD or slicer first.");
+    }
+    showWarn(warns.join(" "));
+
+    const k = settings.karat, density = settings.dens[k];
+    const weight = volumeCm3 * density, fine = weight * FINENESS[k];
+    $("weight").textContent = grams(weight);
+    $("weightSub").textContent = k + "K · " + density + " g/cm³";
+    $("fine").textContent = grams(fine);
+    $("fineSub").textContent = (FINENESS[k] * 100).toFixed(1) + "% gold";
+
+    $("lVat").textContent = "VAT " + settings.vatPct + "%";
+    if (!gOz || !fx) {
+      ["qGold", "qPrint", "qSub", "qVat", "qTotal"].forEach((id) => ($(id).textContent = "—"));
+      $("qLabor").textContent = ils(round2(weight * settings.labor));
+      $("nGold").textContent = grams(fine) + " × waiting for price";
+      $("nLabor").textContent = grams(weight) + " × " + ils(settings.labor);
+      $("nPrint").textContent = settings.printPct + "% of gold";
+      $("qUsd").textContent = "";
+      $("quoteNote").hidden = false;
+      $("quoteNote").textContent = "The total appears once a gold price and exchange rate are available.";
+      share.disabled = true;
+      return;
+    }
+    const q = quote({ volumeCm3, karat: k, density, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx });
+    mesh.quote = q;
+    $("qGold").textContent = ils(q.gold);
+    $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
+    $("qLabor").textContent = ils(q.labor);
+    $("nLabor").textContent = grams(q.weight) + " × " + ils(settings.labor);
+    $("qPrint").textContent = ils(q.printing);
+    $("nPrint").textContent = settings.printPct + "% of " + ils(q.gold);
+    $("qSub").textContent = ils(q.subtotal);
+    $("qVat").textContent = ils(q.vat);
+    $("qTotal").textContent = ils(q.total);
+    $("qUsd").textContent = "≈ " + usd(q.totalUsd) + " USD";
+    $("quoteNote").hidden = !mesh.example;
+    $("quoteNote").textContent = mesh.example ? "This quote is for the example ring. Choose an STL file above to price your own piece." : "";
+    share.disabled = false;
+  }
+
+  // ---------- controls ----------
+  $("units").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-u]");
+    if (!b) return;
+    settings.unit = b.dataset.u; saveSettings(); render();
+  });
+  $("karats").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-k]");
+    if (!b) return;
+    settings.karat = +b.dataset.k; saveSettings(); render();
+  });
+  $("refresh").addEventListener("click", refreshPrices);
+
+  const numFields = [
+    ["sLabor", () => settings.labor, (v) => (settings.labor = v)],
+    ["sPrint", () => settings.printPct, (v) => (settings.printPct = v)],
+    ["sVat", () => settings.vatPct, (v) => (settings.vatPct = v)],
+    ["sD9", () => settings.dens[9], (v) => (settings.dens[9] = v)],
+    ["sD14", () => settings.dens[14], (v) => (settings.dens[14] = v)],
+    ["sD18", () => settings.dens[18], (v) => (settings.dens[18] = v)],
+  ];
+  function fillSettings() {
+    numFields.forEach(([id, get]) => ($(id).value = get()));
+    $("sGold").value = settings.goldOverride || "";
+    $("sFx").value = settings.fxOverride || "";
+  }
+  numFields.forEach(([id, , set]) => {
+    $(id).addEventListener("input", (e) => {
+      const v = parseNum(e.target.value);
+      if (v === null) return;
+      set(v); saveSettings(); render();
+    });
+  });
+  ["sGold", "sFx"].forEach((id) => {
+    $(id).addEventListener("input", (e) => {
+      settings[id === "sGold" ? "goldOverride" : "fxOverride"] = e.target.value.trim();
+      saveSettings(); render();
+    });
+  });
+  $("reset").addEventListener("click", () => {
+    Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit });
+    saveSettings(); fillSettings(); render();
+  });
+
+  // ---------- share ----------
+  function quoteText() {
+    const q = mesh.quote, k = settings.karat;
+    const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    return [
+      "Gold quote · " + k + "K (" + Math.round(FINENESS[k] * 1000) + ")",
+      mesh.example ? "Example ring band" : mesh.name,
+      "Weight " + grams(q.weight) + " · fine gold " + grams(q.fine),
+      "",
+      "Fine gold: " + ils(q.gold),
+      "Labor: " + ils(q.labor),
+      "Printing: " + ils(q.printing),
+      "Before VAT: " + ils(q.subtotal),
+      "VAT " + settings.vatPct + "%: " + ils(q.vat),
+      "Total: " + ils(q.total) + " (≈ " + usd(q.totalUsd) + ")",
+      "",
+      "Gold " + usd(goldOz()) + "/oz · $1 = ₪" + usdIls().toFixed(3) + " · " + date,
+    ].join("\n");
+  }
+  $("share").addEventListener("click", async () => {
+    if (!mesh || !mesh.quote) return;
+    const text = quoteText();
+    const btn = $("share");
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "Copied";
+    } catch {
+      btn.textContent = "Couldn't copy";
+    }
+    setTimeout(() => (btn.textContent = "Share quote"), 1800);
+  });
+
+  // ---------- start ----------
+  fillSettings();
+  loadMesh(ringBand(), "Ring band, size 17", true);
+  refreshPrices();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && (!prices.checkedAt || Date.now() - prices.checkedAt > 10 * 60 * 1000)) refreshPrices();
+  });
+  setInterval(() => { if (!loading) render(); }, 60 * 1000);
+})();
+</script>
+</body>
+</html>
