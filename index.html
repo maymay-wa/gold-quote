@@ -29,6 +29,7 @@
   --control: #8C8C8C;
   --on-ink: #FFFFFF;
   --on-ink-muted: #B5B5B5;
+  --track: #F2F1EF;
   --stage: #EFEFEF;
   --stage-hi: #FAFAFA;
   --warn: #9A3B12;
@@ -40,7 +41,7 @@
   --t-sm: 15px;
   --t-body: 17px;
   --t-fig: 36px;
-  --t-total: 64px;
+  --t-total: min(48px, 12vw);
   color-scheme: light;
 }
 
@@ -113,7 +114,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn.drag { outline: 1px dashed var(--ink); outline-offset: 4px; }
 .warn { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: var(--t-sm); line-height: 1.45; text-align: left; }
 
-.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid var(--frame); border-radius: 14px; }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--track); border-radius: 14px; }
 .seg button {
   display: grid; place-items: center; min-height: 50px; padding: 0 4px;
   border: 0; border-radius: 10px; background: transparent; color: var(--ink); font: 500 var(--t-body) var(--font); letter-spacing: .01em;
@@ -121,8 +122,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seg button[aria-checked="true"] { background: var(--solid); color: var(--on-ink); }
 
 .total-wrap { display: grid; gap: 10px; }
-.total { font-size: var(--t-total); font-weight: 300; letter-spacing: -.03em; line-height: 1; }
+.total { font-size: var(--t-total); font-weight: 300; letter-spacing: -.025em; line-height: 1.05; }
 .total .cur { font-family: var(--sym); font-size: .38em; font-weight: 300; vertical-align: 1em; margin-right: .14em; color: var(--muted); letter-spacing: 0; }
+.total .dash { margin: 0 .06em; color: var(--muted); }
+.total.long { font-size: calc(var(--t-total) * .82); }
 .total-sub { margin: 0; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
 .total-sub:empty { display: none; }
 .fresh { margin: 0; font-size: var(--t-sm); line-height: 1.45; color: var(--warn); }
@@ -177,7 +180,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .foot a { color: inherit; white-space: nowrap; }
 
 @media (max-width: 360px) {
-  :root { --t-total: 56px; --t-fig: 32px; }
+  :root { --t-fig: 32px; }
   #view { width: 112px; height: 112px; }
 }
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
@@ -209,8 +212,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     </label>
   </section>
 
-  <section class="sec" aria-labelledby="l-gold">
-    <h2 class="label" id="l-gold">Gold</h2>
+  <section class="sec" aria-label="Gold">
     <div class="seg" id="karats" role="radiogroup" aria-label="Gold type">
       <button type="button" role="radio" data-k="9">9K</button>
       <button type="button" role="radio" data-k="14">14K</button>
@@ -222,8 +224,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     </div>
   </section>
 
-  <section class="sec" aria-labelledby="l-price">
-    <h2 class="label" id="l-price">Price</h2>
+  <section class="sec" aria-label="Price">
     <div class="total-wrap">
       <div class="total" id="qTotal"><span class="cur">₪</span>—</div>
       <p class="total-sub" id="qUsd"></p>
@@ -240,7 +241,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <div class="line"><span>Printing<small id="nPrint">—</small></span><span class="amt" id="qPrint">—</span></div>
       <div class="line subtotal"><span>Before VAT</span><span class="amt" id="qSub">—</span></div>
       <div class="line"><span id="lVat">VAT</span><span class="amt" id="qVat">—</span></div>
-      <div class="line grand"><span>Total</span><span class="amt" id="qTotal2">—</span></div>
+      <div class="line subtotal"><span>Estimate</span><span class="amt" id="qTotal2">—</span></div>
+      <div class="line grand"><span>Quote range<small id="nRange">—</small></span><span class="amt" id="qRange">—</span></div>
       <p class="price-detail" id="priceDetail">Loading prices…</p>
       <dl class="mini">
         <div><dt>Mesh</dt><dd id="tris">—</dd></div>
@@ -263,6 +265,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
         <label class="field">Labor<small>₪ per gram of piece</small><input id="sLabor" type="text" inputmode="decimal" autocomplete="off"></label>
         <label class="field">Printing fee<small>% of gold cost</small><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"></label>
         <label class="field">VAT<small>% on the full total</small><input id="sVat" type="text" inputmode="decimal" autocomplete="off"></label>
+        <h3>Quote range</h3>
+        <label class="field">Below<small>% under the estimate</small><input id="sRangeLo" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label class="field">Above<small>% over the estimate</small><input id="sRangeHi" type="text" inputmode="decimal" autocomplete="off"></label>
         <h3>Density, g/cm³</h3>
         <label class="field">9K<small>yellow ≈ 11.2</small><input id="sD9" type="text" inputmode="decimal" autocomplete="off"></label>
         <label class="field">14K<small>yellow ≈ 13.1</small><input id="sD14" type="text" inputmode="decimal" autocomplete="off"></label>
@@ -288,7 +293,7 @@ const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, labor: 35, printPct: 5, vatPct: 18, rangeLo: 2, rangeHi: 5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -401,6 +406,13 @@ const round2 = (v) => Math.round(v * 100) / 100;
 
 // goldIlsG is the charged price per gram of fine gold: spot plus the premium.
 // Each line is rounded to agorot so the shown lines add up exactly to the total.
+// The quote is shown as a range. Real cost usually lands above the model estimate (casting, finishing, gold moving
+// between quote and casting) and rarely far below, so the default is 2% under to 5% over, rounded outward to a clean step.
+function priceRange(total, loPct, hiPct) {
+  const step = total < 500 ? 5 : total < 10000 ? 10 : 50;
+  return { lo: Math.floor((total * (1 - loPct / 100)) / step) * step, hi: Math.ceil((total * (1 + hiPct / 100)) / step) * step, step };
+}
+
 function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vatPct, goldUsdOz, usdIls }) {
   const weight = volumeCm3 * density;
   const fine = weight * FINENESS[karat];
@@ -727,8 +739,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     copyBd.disabled = true;
     if (!mesh) {
       $("volSub").textContent = "volume";
-      setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal2"], "—");
-      setText(["nGold", "nLabor", "nPrint", "qUsd"], "");
+      setText(["dims", "vol", "tris", "weight", "fine", "qGold", "qLabor", "qPrint", "qSub", "qVat", "qTotal2", "qRange"], "—");
+      setText(["nGold", "nLabor", "nPrint", "nRange", "qUsd"], "");
       setTotal("—");
       $("quoteNote").hidden = true;
       return;
@@ -756,13 +768,13 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     const k = settings.karat, density = settings.dens[k];
     const weight = volumeCm3 * density, fine = weight * FINENESS[k];
     $("weight").innerHTML = fig(fmt2.format(weight), "g");
-    $("weightSub").textContent = "weight in " + k + "K";
+    $("weightSub").textContent = "weight";
     $("fine").innerHTML = fig(fmt2.format(fine), "g");
-    $("fineSub").textContent = "pure gold (" + Math.round(FINENESS[k] * 1000) + ")";
+    $("fineSub").textContent = "pure gold";
 
     const base = { volumeCm3, premiumPct: settings.premiumPct, labor: settings.labor, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx };
     if (!gOz || !fx) {
-      setText(["qGold", "qPrint", "qSub", "qVat", "qTotal2"], "—");
+      setText(["qGold", "qPrint", "qSub", "qVat", "qTotal2", "qRange", "nRange"], "—");
       setTotal("—");
       $("qLabor").textContent = ils(round2(weight * settings.labor));
       $("nGold").textContent = grams(fine) + " pure gold, waiting for price";
@@ -774,9 +786,14 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     }
     const q = quote({ ...base, karat: k, density });
     mesh.quote = q;
-    setTotal(fmt0.format(q.total));
+    const rg = priceRange(q.total, settings.rangeLo, settings.rangeHi);
+    mesh.range = rg;
+    setTotal(fmt0.format(rg.lo) + '<span class="dash">–</span>' + fmt0.format(rg.hi));
+    $("qTotal").classList.toggle("long", rg.hi >= 10000);
     $("qTotal2").textContent = ils(q.total);
-    $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ " + usd(q.totalUsd);
+    $("qRange").textContent = ils0(rg.lo) + " – " + ils0(rg.hi);
+    $("nRange").textContent = settings.rangeLo + "% under to " + settings.rangeHi + "% over, rounded to ₪" + rg.step;
+    $("qUsd").textContent = "Including " + settings.vatPct + "% VAT · ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
     $("qGold").textContent = ils(q.gold);
     $("nGold").textContent = grams(q.fine) + " × " + ils(q.goldIlsG);
     $("qLabor").textContent = ils(q.labor);
@@ -808,6 +825,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     ["sLabor", () => settings.labor, (v) => (settings.labor = v)],
     ["sPrint", () => settings.printPct, (v) => (settings.printPct = v)],
     ["sVat", () => settings.vatPct, (v) => (settings.vatPct = v)],
+    ["sRangeLo", () => settings.rangeLo, (v) => (settings.rangeLo = v)],
+    ["sRangeHi", () => settings.rangeHi, (v) => (settings.rangeHi = v)],
     ["sD9", () => settings.dens[9], (v) => (settings.dens[9] = v)],
     ["sD14", () => settings.dens[14], (v) => (settings.dens[14] = v)],
     ["sD18", () => settings.dens[18], (v) => (settings.dens[18] = v)],
@@ -820,7 +839,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
   const RANGES = {
     sPremium: [0, 50, "Gold premium", "%"], sLabor: [0, 1000, "Labor", " ₪/g"], sPrint: [0, 50, "Printing fee", "%"],
-    sVat: [0, 30, "VAT", "%"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
+    sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Range below", "%"], sRangeHi: [0, 30, "Range above", "%"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
     sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
   };
   function fieldError(input, msg) {
@@ -860,7 +879,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     });
   });
   $("reset").addEventListener("click", () => {
-    if (!confirm("Reset premium, labor, printing fee, VAT, densities and manual prices to the defaults?")) return;
+    if (!confirm("Reset premium, labor, printing fee, VAT, quote range, densities and manual prices to the defaults?")) return;
     Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit });
     saveSettings(); fillSettings(); fieldError($("sVat"), ""); render();
   });
@@ -881,7 +900,8 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
       "Printing: " + ils(q.printing),
       "Before VAT: " + ils(q.subtotal),
       "VAT " + settings.vatPct + "%: " + ils(q.vat),
-      "Total: " + ils(q.total) + " (≈ " + usd(q.totalUsd) + ")",
+      "Estimate: " + ils(q.total) + " (≈ " + usd(q.totalUsd) + ")",
+      "Quote range: " + ils0(mesh.range.lo) + " – " + ils0(mesh.range.hi),
       "",
       "Gold " + usd(goldOz()) + "/oz + " + settings.premiumPct + "% · $1 = ₪" + usdIls().toFixed(3) + " · " + today(),
     ].join("\n");
