@@ -184,26 +184,52 @@ button { font: inherit; color: inherit; cursor: pointer; }
   #view { width: 112px; height: 112px; }
 }
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
+
+/* Laptop: piece on the left (stays in view), karat, price and details on the right */
+@media (min-width: 900px) {
+  :root { --t-total: 60px; --t-fig: 40px; }
+  body { padding-left: max(40px, env(safe-area-inset-left, 0px)); padding-right: max(40px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 1080px; padding-bottom: 64px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 80px; align-items: start; }
+  .top { grid-column: 1 / -1; padding-block: 20px; }
+  .wordmark { font-size: 13px; }
+  .wordmark br { display: none; }
+  .stl { position: sticky; top: 0; padding-block: 40px; gap: 24px; border-bottom: 0; }
+  .stl-figs { display: contents; }
+  .stl .stage { order: -1; padding: 0; }
+  .stl-figs .fig + .fig { border-left: 0; }
+  #view { width: min(100%, 52vh); height: auto; aspect-ratio: 1 / 1; border-radius: 24px; }
+  .stl .btn { justify-self: center; width: min(100%, 360px); }
+  .side .sec:first-child { padding-top: 40px; }
+  .side .sec { gap: 26px; padding-block: 36px; }
+}
+@media (hover: hover) {
+  .btn-solid:hover { background: var(--ink); border-color: var(--ink); }
+  .btn-outline:hover, .chip:not([aria-checked="true"]):hover, .reset:hover { border-color: var(--ink); }
+  .seg button:not([aria-checked="true"]):hover { background: #E7E6E3; }
+  .fold summary:hover::after { color: var(--ink); }
+  .rates:hover { opacity: .7; }
+  .linkbtn:hover { text-decoration-color: var(--ink); }
+}
 </style>
 </head>
 <body>
 <main>
   <header class="top">
-    <span class="wordmark">Raquel’s<br>Little Helper</span>
+    <span class="wordmark">Raquel’s<br> Little Helper</span>
     <button class="rates" id="refresh" type="button" aria-label="Live prices. Tap to refresh.">
       <span class="dot" id="fxDot"></span><span id="fxTop">$1 = ₪ —</span>
       <span class="dot" id="goldDot"></span><span id="goldTop">Gold ₪ — / g</span>
     </button>
   </header>
 
-  <section class="sec" id="l-stl" aria-label="STL file">
+  <section class="sec stl" id="l-stl" aria-label="STL file">
     <div class="piece-info">
       <span class="fname" id="fname">Ring band, size 17</span>
       <span class="piece-meta"><span id="dims">—</span><span id="exTag"> · example</span></span>
     </div>
-    <div class="figs">
-      <div class="fig"><canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas></div>
-      <div class="fig"><b id="vol">—</b><span id="volSub">volume</span></div>
+    <div class="figs stl-figs">
+      <div class="fig stage"><canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas></div>
+      <div class="fig volfig"><b id="vol">—</b><span id="volSub">volume</span></div>
     </div>
     <p class="warn" id="meshWarn" hidden></p>
     <label class="btn btn-solid" id="pick">
@@ -212,6 +238,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     </label>
   </section>
 
+  <div class="side">
   <section class="sec" aria-label="Gold">
     <div class="seg" id="karats" role="radiogroup" aria-label="Gold type">
       <button type="button" role="radio" data-k="9">9K</button>
@@ -288,6 +315,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     <p>Gold is charged on pure gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.</p>
     <p>Weight is estimated from the model's volume and the alloy density. Sprue gold is estimated from the sprue size in Pricing settings. Casting loss isn't included.</p>
   </footer>
+  </div>
 </main>
 
 <script>
@@ -699,6 +727,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   const setTotal = (text) => { $("qTotal").innerHTML = '<span class="cur">₪</span>' + text; };
 
   // ---------- render ----------
+  const finePointer = !!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches);
   function render() {
     const gOz = goldOz(), fx = usdIls();
     const gOver = parseNum(settings.goldOverride, true), fOver = parseNum(settings.fxOverride);
@@ -743,7 +772,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
     // piece
     const real = !!mesh && !mesh.example;
     $("pick").className = "btn " + (real ? "btn-outline" : "btn-solid");
-    $("pickText").textContent = real ? "Choose another file" : "Choose STL file";
+    $("pickText").textContent = real ? "Choose another file" : finePointer ? "Choose or drop an STL file" : "Choose STL file";
     $("exTag").hidden = !mesh || !mesh.example;
     const copyBd = $("copyBd");
     copyBd.disabled = true;
@@ -933,6 +962,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, labor, printPct, vat
   });
 
   // ---------- start ----------
+  if (window.matchMedia && matchMedia("(min-width: 900px)").matches) $("breakdown").open = true;
   fillSettings();
   loadMesh(ringBand(), "Ring band, size 17", true);
   refreshPrices();
