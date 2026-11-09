@@ -224,23 +224,34 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(20px, env(safe-area-inset-left, 0px));
 }
 .v-bottom > * { width: 100%; max-width: 460px; justify-self: center; }
-.v-panel { display: grid; gap: 10px; min-height: 158px; align-content: center; } /* the Metal panel's height, so switching tabs never resizes the model */
+.v-panel { display: grid; gap: 10px; } /* each panel is as tall as what's in it; the model takes the rest */
 .v-panel .seg-sm { margin-top: 0; }
 .seg.seg4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .seg.seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.v-metal { align-content: end; } /* rows sit on the bottom, so colour and karat stay put when plating appears for white */
 .v-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .v-views button { min-height: 40px; padding: 0 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--t-sm); }
 .v-panel input[type="range"] { width: 100%; height: 36px; margin: 0; accent-color: var(--solid); }
 .v-panel input[type="range"]:disabled { opacity: .35; }
-.v-measure { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+/* Measuring: a ruler icon next to Done switches it on; the reading floats over the model's top-left corner */
+.v-actions { flex: none; display: flex; align-items: center; gap: 4px; }
+.v-ruler { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
+.v-ruler svg {
+  width: 36px; height: 36px; box-sizing: border-box; padding: 7px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+  fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+.v-ruler[aria-pressed="true"] svg { border-color: var(--solid); background: var(--solid); stroke: var(--on-ink); }
+.v-measure {
+  position: absolute; top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 6px 0 14px; box-sizing: border-box;
+  border-radius: 12px; background: rgba(255, 255, 255, .9);
+}
+.v-measure .v-clear { min-height: 40px; }
 .v-read { margin: 0; text-align: left; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
 .v-read.has { font-size: var(--t-fig); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); }
 .v-read small { margin-left: 4px; font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); }
 .v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 .v-tabs button { min-height: 44px; }
 .v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
-@media (max-width: 380px) { .v-tabs button { padding: 0 2px; font-size: var(--t-sm); } } /* small phones: four tabs still fit */
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
@@ -278,6 +289,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .v-tabs button[aria-selected="true"]:hover { background: var(--solid); }
   .v-views button:hover { border-color: var(--frame); }
   .v-clear:hover, .v-done:hover { color: var(--ink); }
+  .v-ruler:not([aria-pressed="true"]):hover svg { border-color: var(--frame); }
   .expand:hover svg { background: #fff; }
 }
 </style>
@@ -398,12 +410,21 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="3D viewer" tabindex="-1" hidden>
   <div class="v-top">
     <div class="v-title"><span class="v-name" id="vName"></span><span class="v-dims" id="vDims"></span></div>
-    <button type="button" class="v-done" id="vDone">Done</button>
+    <div class="v-actions">
+      <button type="button" class="v-ruler" id="vRuler" aria-pressed="false" aria-label="Measure">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21Z"/><path d="M7.05 12.45l1.8 1.8M9.75 9.75l2.6 2.6M12.45 7.05l1.8 1.8"/></svg>
+      </button>
+      <button type="button" class="v-done" id="vDone">Done</button>
+    </div>
   </div>
   <div class="v-stage">
     <canvas id="gl" aria-label="3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset."></canvas>
     <svg class="v-marks" aria-hidden="true"><line id="mHalo"/><line id="mLine"/><circle id="mA" r="5"/><circle id="mB" r="5"/></svg>
     <p class="v-msg" id="vMsg" hidden></p>
+    <div class="v-measure" id="vMeasure" hidden>
+      <p class="v-read" id="vRead" aria-live="polite">Tap two points on the piece</p>
+      <button type="button" class="v-clear" id="vClear" hidden>Clear</button>
+    </div>
   </div>
   <div class="v-bottom">
     <div class="v-panel" id="pView" role="tabpanel">
@@ -414,7 +435,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" data-view="home">Reset</button>
       </div>
     </div>
-    <div class="v-panel v-metal" id="pMetal" role="tabpanel" hidden>
+    <div class="v-panel" id="pMetal" role="tabpanel" hidden>
       <div class="seg seg-sm seg2" id="vPlate" role="radiogroup" aria-label="Plating">
         <button type="button" role="radio" data-p="none">Unplated</button>
         <button type="button" role="radio" data-p="rhodium">Rhodium plated</button>
@@ -439,14 +460,9 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
       </div>
       <input type="range" id="vCut" min="10" max="990" value="500" aria-label="Cut position" disabled>
     </div>
-    <div class="v-panel v-measure" id="pMeasure" role="tabpanel" hidden>
-      <p class="v-read" id="vRead" aria-live="polite">Tap two points on the piece</p>
-      <button type="button" class="v-clear" id="vClear" hidden>Clear</button>
-    </div>
-    <div class="seg seg4 v-tabs" id="vTabs" role="tablist" aria-label="Tools">
+    <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
       <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
       <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
-      <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
       <button type="button" role="tab" data-tab="Metal" aria-selected="false">Metal</button>
     </div>
   </div>
@@ -987,7 +1003,7 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   const RHODIUM = [0.9, 0.9, 0.92, 1.6];
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
-    count: 0, rad: 1, flip: false, anim: null, raf: 0, viewFor: null, tab: "View", cut: null, pts: [], miss: false,
+    count: 0, rad: 1, flip: false, anim: null, raf: 0, viewFor: null, tab: "View", measuring: false, cut: null, pts: [], miss: false,
     finish: FINISH[store.get("gq.finish")] ? store.get("gq.finish") : "yellow",
     rhodium: store.get("gq.rhodium") === true, // white only: show it rhodium-plated
   };
@@ -1148,7 +1164,7 @@ void main() {
   const marks = ["mA", "mB", "mLine", "mHalo"].map($);
   function vMarks(m, s, W, H) {
     const c = mesh.stats.center;
-    const xy = (V.tab === "Measure" ? V.pts : []).map((p) => {
+    const xy = (V.measuring ? V.pts : []).map((p) => {
       const dx = p[0] - c[0], dy = p[1] - c[1], dz = p[2] - c[2];
       return [W / 2 + V.panX + (m[0] * dx + m[1] * dy + m[2] * dz) * s, H / 2 + V.panY - (m[3] * dx + m[4] * dy + m[5] * dz) * s];
     });
@@ -1284,7 +1300,7 @@ void main() {
     if (e.type !== "pointerup" || !t || t.pan || touches.size) return;
     tap = null;
     if (Math.hypot(e.clientX - t.x, e.clientY - t.y) > 8 || performance.now() - t.t > 500) return;
-    if (V.tab === "Measure") return measureAt(e.clientX, e.clientY);
+    if (V.measuring) return measureAt(e.clientX, e.clientY);
     const now = performance.now();
     if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { lastTap = null; animateTo(HOME); }
     else lastTap = { x: e.clientX, y: e.clientY, t: now };
@@ -1307,8 +1323,15 @@ void main() {
   function setTab(name) {
     V.tab = name;
     document.querySelectorAll("#vTabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
-    ["View", "Section", "Measure", "Metal"].forEach((t) => ($("p" + t).hidden = t !== name));
-    glc.classList.toggle("measuring", name === "Measure");
+    ["View", "Section", "Metal"].forEach((t) => ($("p" + t).hidden = t !== name));
+    vSchedule();
+  }
+  // Measuring works on top of any tab, so she can measure across a section cut.
+  function setMeasure(on) {
+    V.measuring = on;
+    $("vRuler").setAttribute("aria-pressed", String(on));
+    $("vMeasure").hidden = !on;
+    glc.classList.toggle("measuring", on);
     showReading();
     vSchedule();
   }
@@ -1349,6 +1372,7 @@ void main() {
   $("vAxis").addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b) setCut(+b.dataset.a); });
   $("vCut").addEventListener("input", (e) => { if (V.cut) { V.cut.t = e.target.value / 1000; vSchedule(); } });
   $("vClear").addEventListener("click", () => { V.pts = []; V.miss = false; showReading(); vSchedule(); });
+  $("vRuler").addEventListener("click", () => setMeasure(!V.measuring));
   setFinish(V.finish);
 
   // Open and close. Back (or the iOS edge swipe) closes it too.
@@ -1370,6 +1394,7 @@ void main() {
     $("vMsg").hidden = ok;
     $("vMsg").textContent = ok ? "" : "This browser can't show the 3D viewer.";
     setTab(V.tab);
+    setMeasure(V.measuring);
     try { history.pushState({ gqViewer: 1 }, ""); } catch {}
     viewer.focus({ preventScroll: true });
     vSchedule();
