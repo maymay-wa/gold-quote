@@ -210,7 +210,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-name { font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v-dims { font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
 .v-done { flex: none; min-height: 44px; padding: 0 0 0 12px; border: 0; background: none; font: 500 var(--t-body) var(--font); }
-.v-stage { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 80%); }
+.v-stage { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 40%, var(--look-hi, var(--stage-hi)), var(--look-lo, var(--stage)) 80%); }
 #gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #gl:active { cursor: grabbing; }
 #gl.measuring { cursor: crosshair; }
@@ -252,6 +252,19 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 .v-tabs button { min-height: 44px; }
 .v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
+/* Studio: backdrop swatches, each a small sweep of its colours, with the name below */
+.v-swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
+.v-swatches button {
+  display: grid; justify-items: center; gap: 5px; padding: 3px 0 0; border: 0; background: none;
+  font-size: var(--t-cap); line-height: 1.2; color: var(--muted);
+}
+.v-swatches button::before {
+  content: ""; width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, var(--hi), var(--lo)); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14);
+}
+.v-swatches button[aria-checked="true"] { color: var(--ink); }
+.v-swatches button[aria-checked="true"]::before { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--solid); }
+.v-share { min-height: 50px; width: 100%; }
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
@@ -411,7 +424,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   <div class="v-top">
     <div class="v-title"><span class="v-name" id="vName"></span><span class="v-dims" id="vDims"></span></div>
     <div class="v-actions">
-      <button type="button" class="v-icon" id="vShot" aria-label="Screenshot">
+      <button type="button" class="v-icon" id="vShot" aria-pressed="false" aria-label="Studio photo">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.2l1.6-2.2h6.4L16.8 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z"/><circle cx="12" cy="12.8" r="3.4"/></svg>
       </button>
       <button type="button" class="v-icon" id="vRuler" aria-pressed="false" aria-label="Measure">
@@ -462,6 +475,19 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" role="radio" data-a="2">Height</button>
       </div>
       <input type="range" id="vCut" min="10" max="990" value="500" aria-label="Cut position" disabled>
+    </div>
+    <div class="v-panel" id="pStudio" hidden>
+      <div class="v-swatches" id="sLook" role="radiogroup" aria-label="Backdrop"></div>
+      <div class="seg seg-sm seg2" id="sSurface" role="radiogroup" aria-label="Surface">
+        <button type="button" role="radio" data-s="matte">Matte</button>
+        <button type="button" role="radio" data-s="gloss">Gloss</button>
+      </div>
+      <div class="seg seg-sm" id="sFinish" role="radiogroup" aria-label="Metal">
+        <button type="button" role="radio" data-f="white">White</button>
+        <button type="button" role="radio" data-f="rose">Rose</button>
+        <button type="button" role="radio" data-f="yellow">Yellow</button>
+      </div>
+      <button type="button" class="btn btn-solid v-share" id="sShare">Share photo</button>
     </div>
     <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
       <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
@@ -1004,11 +1030,26 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   };
   // White with the Rhodium switch on: plating hides the alloy, so it is the same bright, faintly cool white at every karat.
   const RHODIUM = [0.9, 0.9, 0.92, 1.6];
+  // Studio backdrops: a seamless sweep from `hi` (behind the piece) to `lo` (the edges). `tint` colours the tent walls
+  // the metal reflects, the way a coloured sweep casts its colour into polish; `mirror` is a Gloss reflection's strength.
+  const LOOKS = {
+    white: { label: "White", hi: "#FFFFFF", lo: "#E4E3E1", tint: [1, 1, 1], mirror: 0.38 },
+    cream: { label: "Cream", hi: "#FCF7EE", lo: "#E6DAC6", tint: [1, 0.96, 0.88], mirror: 0.38 },
+    blush: { label: "Blush", hi: "#FCF0EC", lo: "#E8CFC8", tint: [1, 0.9, 0.88], mirror: 0.38 },
+    sage: { label: "Sage", hi: "#F0F3EC", lo: "#CCD5C4", tint: [0.92, 0.98, 0.9], mirror: 0.38 },
+    blue: { label: "Blue", hi: "#EEF2F6", lo: "#C9D3DE", tint: [0.9, 0.94, 1], mirror: 0.38 },
+    black: { label: "Black", hi: "#2C2A28", lo: "#0B0A0A", tint: [1, 1, 1], mirror: 0.45, dark: true },
+  };
+  // On Black the tent goes dark too: dim walls, floor and ceiling, a little fill from the card, full lights, so the
+  // metal shows bright strips and glints against deep shadow.
+  const DARK_TENT = [0.12, 0.3, 0.35, 1.0];
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
     count: 0, rad: 1, flip: false, anim: null, raf: 0, viewFor: null, tab: "View", measuring: false, cut: null, pts: [], miss: false,
     finish: FINISH[store.get("gq.finish")] ? store.get("gq.finish") : "yellow",
     rhodium: store.get("gq.rhodium") === true, // white only: show it rhodium-plated
+    studio: false, shotScale: 0, st: null, prog: null,
+    look: (({ bg, surface } = store.get("gq.studio") || {}) => ({ bg: LOOKS[bg] ? bg : "white", surface: surface === "gloss" ? "gloss" : "matte" }))(),
   };
 
   const VS = `
@@ -1020,12 +1061,19 @@ uniform vec2 uScale;
 uniform vec2 uPan;
 uniform float uDepth;
 uniform vec4 uClip;
+uniform vec4 uFloor;   // Studio floor in view space: its up direction (xyz) and height (w), where the piece rests
+uniform float uMirror; // 1: draw the piece's reflection in a glossy floor
 varying vec3 vNrm;
 varying float vCut;
+varying float vH;      // height above the floor
+invariant gl_Position; // the reflection is drawn twice and must land on exactly the same depths
 void main() {
   vec3 q = aPos - uCenter;
   vec3 p = uRot * q;
-  vNrm = uRot * aNrm;
+  vec3 n = uRot * aNrm;
+  vH = dot(p, uFloor.xyz) - uFloor.w;
+  if (uMirror > 0.5) { p -= 2.0 * vH * uFloor.xyz; n = reflect(n, uFloor.xyz); }
+  vNrm = n;
   vCut = dot(q, uClip.xyz) - uClip.w;
   gl_Position = vec4(p.xy * uScale + uPan, -p.z * uDepth, 1.0);
 }`;
@@ -1037,66 +1085,153 @@ precision mediump float;
 #endif
 uniform vec4 uAlloy; // rgb: reflectance head-on, a: exposure
 uniform vec3 uCap;
+uniform vec4 uEnv;   // the tent's walls and floor, ceiling, card by the lens, and lights; all 1 is the white tent
+uniform vec3 uTint;  // colour of the tent's walls and floor (Studio backdrops)
+uniform vec2 uFade;  // reflection pass: its strength at the floor and how high up it fades out; x = 0 for the piece
 varying vec3 vNrm;
 varying float vCut;
+varying float vH;
 // A jeweller's light tent, fixed to the camera: a white sweep below, a dark seam where it meets the pale walls
 // (the stripe that makes polish read as polish), a bright ceiling, a big softbox upper left, a strip light on the
 // right and a white card around the lens. r is a view-space direction (x right, y up, z towards her).
-float studio(vec3 r) {
-  float c = mix(0.3, 0.55, smoothstep(-0.6, 0.3, r.y));
+vec3 studio(vec3 r) {
+  float b = mix(0.3, 0.55, smoothstep(-0.6, 0.3, r.y));
   float seam = (r.y + 0.15) / 0.28;
-  c *= 1.0 - 0.97 * exp(-seam * seam);
-  c += 0.9 * smoothstep(0.5, 0.95, r.y);
-  c += 2.4 * smoothstep(0.78, 0.93, dot(r, normalize(vec3(-0.6, 0.55, 0.58))));
-  c += 1.5 * smoothstep(0.86, 0.95, dot(r, normalize(vec3(0.85, 0.05, 0.52))));
-  c += 0.55 * smoothstep(0.7, 1.0, r.z) * smoothstep(-0.45, 0.0, r.y); // white card around the camera, so faces turned to her stay bright
+  b *= 1.0 - 0.97 * exp(-seam * seam);
+  vec3 c = uEnv.x * b * uTint;
+  c += uEnv.y * 0.9 * smoothstep(0.5, 0.95, r.y);
+  c += uEnv.w * 2.4 * smoothstep(0.78, 0.93, dot(r, normalize(vec3(-0.6, 0.55, 0.58))));
+  c += uEnv.w * 1.5 * smoothstep(0.86, 0.95, dot(r, normalize(vec3(0.85, 0.05, 0.52))));
+  c += uEnv.z * 0.55 * smoothstep(0.7, 1.0, r.z) * smoothstep(-0.45, 0.0, r.y); // white card around the camera, so faces turned to her stay bright
   return c;
 }
 void main() {
   if (vCut > 0.0) discard;
-  if (!gl_FrontFacing) { gl_FragColor = vec4(uCap, 1.0); return; }
+  float a = uFade.x > 0.0 ? uFade.x * exp(-vH / uFade.y) : 1.0; // the reflection fades away from where the piece touches
+  if (!gl_FrontFacing) { gl_FragColor = vec4(uCap * a, a); return; }
   vec3 n = normalize(vNrm);
   // Polished metal: the studio mirrored in the surface, tinted by the alloy's reflectance (Schlick Fresnel).
   float cv = max(n.z, 0.0);
   vec3 r = 2.0 * n.z * n - vec3(0.0, 0.0, 1.0);
   vec3 f0 = uAlloy.rgb;
   vec3 F = f0 + (1.0 - f0) * pow(1.0 - cv, 5.0);
-  float e = studio(r) * uAlloy.a;
+  vec3 e = studio(r) * uAlloy.a;
   // Matched to photos of real rings: shadows are metal seen in metal, so they take its colour about three times
   // over (deep amber in gold); mid-tones about twice; highlights once.
   vec3 tint = mix(F * F * F, F, smoothstep(0.1, 1.3, e));
-  float v = 2.0 * e / (1.0 + 2.0 * e); // soft shoulder: bright reflections settle near white instead of burning out
+  vec3 v = 2.0 * e / (1.0 + 2.0 * e); // soft shoulder: bright reflections settle near white instead of burning out
   vec3 c = tint * v + 0.01 * f0 * f0;
-  c = mix(c, vec3(v), 0.3 * smoothstep(0.7, 0.95, v)); // the brightest glints lose some colour, as in a photo
-  gl_FragColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+  c = mix(c, v, 0.3 * smoothstep(0.7, 0.95, v)); // the brightest glints lose some colour, as in a photo
+  gl_FragColor = vec4(pow(c, vec3(1.0 / 2.2)) * a, a);
+}`;
+  // Studio shadow, step 1: the piece pressed onto the floor along the light (from the softbox, up front and to the left,
+  // so the shadow falls back and to the right), darkest where it touches. Red is the tight contact shadow, green the
+  // wide soft one. The lowest part of the piece wins the depth test.
+  const SVS = `
+attribute vec3 aPos;
+uniform vec3 uCenter;
+uniform mat3 uRot;
+uniform vec2 uScale;
+uniform vec2 uPan;
+uniform vec4 uClip;
+uniform vec4 uFloor;
+uniform vec3 uLight; // towards the light, view space
+uniform float uReach;
+varying float vH;
+varying float vCut;
+void main() {
+  vec3 q = aPos - uCenter;
+  vec3 p = uRot * q;
+  vH = dot(p, uFloor.xyz) - uFloor.w;
+  p -= vH / dot(uLight, uFloor.xyz) * uLight;
+  vCut = dot(q, uClip.xyz) - uClip.w;
+  gl_Position = vec4(p.xy * uScale + uPan, vH * uReach - 1.0, 1.0);
+}`;
+  const SFS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 uFall; // heights over which the contact and soft shadows fade out
+varying float vH;
+varying float vCut;
+void main() {
+  if (vCut > 0.0) discard;
+  gl_FragColor = vec4(exp(-vH / uFall.x), exp(-vH / uFall.y), 0.0, 1.0);
+}`;
+  // Step 2: blur it (a 9-tap Gaussian, across then down; the soft shadow reads a smaller mip level so its wide taps
+  // don't skip detail), then lay it on the frame as black at that strength.
+  const QVS = `
+attribute vec2 aQuad;
+varying vec2 vUv;
+void main() { vUv = aQuad * 0.5 + 0.5; gl_Position = vec4(aQuad, 0.0, 1.0); }`;
+  const QFS = `
+precision mediump float;
+uniform sampler2D uTex;
+uniform vec2 uStep;   // one CSS pixel along the blur direction, in texture units
+uniform vec2 uSpread; // CSS pixels between taps: contact, soft
+uniform float uBias;
+uniform vec2 uMix;    // 0 0: a blur pass; otherwise draw the shadow at these strengths (contact, soft)
+varying vec2 vUv;
+void main() {
+  if (uMix.x + uMix.y > 0.0) {
+    vec4 t = texture2D(uTex, vUv);
+    gl_FragColor = vec4(0.0, 0.0, 0.0, min(1.0, uMix.x * t.r + uMix.y * t.g));
+    return;
+  }
+  vec2 s = vec2(0.0);
+  float sum = 0.0;
+  for (int i = -4; i <= 4; i++) {
+    float w = exp(-float(i * i) / 8.0);
+    s.x += w * texture2D(uTex, vUv + uStep * (uSpread.x * float(i))).r;
+    s.y += w * texture2D(uTex, vUv + uStep * (uSpread.y * float(i)), uBias).g;
+    sum += w;
+  }
+  gl_FragColor = vec4(s / sum, 0.0, 1.0);
 }`;
 
+  // Attributes sit in fixed slots (0: position or screen corner, 1: normal), so every program shares the mesh buffers.
+  function glProgram(gl, vs, fs, attrs) {
+    const shader = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, shader(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+    attrs.forEach((a, i) => gl.bindAttribLocation(p, i, a));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
+    return p;
+  }
+  const uniforms = (gl, p, names) => Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, n)]));
   function glSetup() {
     let gl = null;
     try { gl = glc.getContext("webgl", { antialias: true, alpha: true, depth: true }) || glc.getContext("experimental-webgl"); } catch {}
     if (!gl) return false;
     try {
-      const shader = (type, src) => {
-        const s = gl.createShader(type);
-        gl.shaderSource(s, src);
-        gl.compileShader(s);
-        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
-        return s;
-      };
-      const p = gl.createProgram();
-      gl.attachShader(p, shader(gl.VERTEX_SHADER, VS));
-      gl.attachShader(p, shader(gl.FRAGMENT_SHADER, FS));
-      gl.linkProgram(p);
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
-      gl.useProgram(p);
-      V.loc = { aPos: gl.getAttribLocation(p, "aPos"), aNrm: gl.getAttribLocation(p, "aNrm") };
-      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uAlloy", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
+      V.prog = glProgram(gl, VS, FS, ["aPos", "aNrm"]);
+      gl.useProgram(V.prog);
+      V.loc = { aPos: 0, aNrm: 1, ...uniforms(gl, V.prog, ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uAlloy", "uCap", "uEnv", "uTint", "uFade", "uFloor", "uMirror"]) };
     } catch { return false; }
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(0, 0, 0, 0);
     gl.uniform3f(V.loc.uCap, 0.231, 0.224, 0.212); // --solid
-    V.gl = gl; V.built = null; V.pbuf = V.nbuf = null;
+    V.gl = gl; V.built = null; V.pbuf = V.nbuf = null; V.st = null;
     return true;
+  }
+  function meshAttribs() {
+    const gl = V.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, V.pbuf);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, V.nbuf);
+    gl.vertexAttribPointer(1, 3, gl.BYTE, true, 4, 0);
+    gl.enableVertexAttribArray(1);
   }
 
   // The file's own vertices go to the GPU as they are, with smooth normals so reflections glide over curves.
@@ -1111,12 +1246,9 @@ void main() {
     V.nbuf = V.nbuf || gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, V.pbuf);
     gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(V.loc.aPos);
-    gl.vertexAttribPointer(V.loc.aPos, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, V.nbuf);
     gl.bufferData(gl.ARRAY_BUFFER, smoothNormals(pos, flip), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(V.loc.aNrm);
-    gl.vertexAttribPointer(V.loc.aNrm, 3, gl.BYTE, true, 4, 0);
+    meshAttribs();
     V.built = mesh; V.count = pos.length / 3; V.rad = Math.sqrt(rad) || 1; V.flip = flip;
   }
 
@@ -1137,30 +1269,182 @@ void main() {
     if (V.anim) V.anim(performance.now());
     const gl = V.gl, L = V.loc;
     if (V.built !== mesh) glUpload();
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const dpr = V.shotScale || Math.min(window.devicePixelRatio || 1, 3);
     const W = glc.clientWidth, H = glc.clientHeight;
     if (!W || !H) return;
     const pw = Math.round(W * dpr), ph = Math.round(H * dpr);
     if (glc.width !== pw || glc.height !== ph) { glc.width = pw; glc.height = ph; }
-    gl.viewport(0, 0, pw, ph);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    const { m, s } = vCamera(W, H), c = mesh.stats.center;
-    gl.uniform3f(L.uCenter, c[0], c[1], c[2]);
-    gl.uniformMatrix3fv(L.uRot, false, [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]]);
-    gl.uniform2f(L.uScale, (s * 2) / W, (s * 2) / H);
-    gl.uniform2f(L.uPan, (V.panX * 2) / W, (-V.panY * 2) / H);
-    gl.uniform1f(L.uDepth, 1 / (V.rad * 1.01));
-    const cut = cutPlane();
-    if (cut) {
-      const a = [0, 0, 0];
-      a[cut.axis] = cut.sign;
-      gl.uniform4f(L.uClip, a[0], a[1], a[2], cut.sign * (cut.value - c[cut.axis]));
-    } else gl.uniform4f(L.uClip, 0, 0, 0, 1);
+    const { m, s } = vCamera(W, H), c = mesh.stats.center, cut = cutPlane(), clip = [0, 0, 0, 1];
+    if (cut) { clip[cut.axis] = cut.sign; clip[3] = cut.sign * (cut.value - c[cut.axis]); }
+    const U = { c, rot: [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]], scale: [(s * 2) / W, (s * 2) / H], pan: [(V.panX * 2) / W, (-V.panY * 2) / H], clip };
+    const look = V.studio ? LOOKS[V.look.bg] : null, gloss = look && V.look.surface === "gloss";
+    const floor = look ? [...FLOOR, floorHeight(m)] : [0, 1, 0, 0];
+    if (look) studioShadow(U, floor, W, H, s * V.rad, gloss);
+    gl.uniform3fv(L.uCenter, c);
+    gl.uniformMatrix3fv(L.uRot, false, U.rot);
+    gl.uniform2fv(L.uScale, U.scale);
+    gl.uniform2fv(L.uPan, U.pan);
+    gl.uniform4fv(L.uClip, clip);
     gl.uniform4fv(L.uAlloy, V.finish === "white" && V.rhodium ? RHODIUM : FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
+    gl.uniform4fv(L.uEnv, look && look.dark ? DARK_TENT : [1, 1, 1, 1]);
+    gl.uniform3fv(L.uTint, look ? look.tint : [1, 1, 1]);
+    gl.uniform4fv(L.uFloor, floor);
+    if (gloss) { // the reflection first, under where the piece will be, fading as it goes down
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.uniform1f(L.uMirror, 1);
+      gl.uniform2f(L.uFade, look.mirror, 0.35 * V.rad);
+      gl.uniform1f(L.uDepth, 1 / (V.rad * 3.6)); // mirrored, the piece reaches further back than its own radius
+      gl.frontFace(V.flip ? gl.CCW : gl.CW);
+      // Depth first, then colour only where each surface is the nearest: it's see-through, so a surface behind it
+      // would otherwise show through wherever it happened to be drawn first.
+      gl.colorMask(false, false, false, false);
+      gl.drawArrays(gl.TRIANGLES, 0, V.count);
+      gl.colorMask(true, true, true, true);
+      gl.depthFunc(gl.LEQUAL);
+      gl.drawArrays(gl.TRIANGLES, 0, V.count);
+      gl.depthFunc(gl.LESS);
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+    }
+    gl.uniform1f(L.uMirror, 0);
+    gl.uniform2f(L.uFade, 0, 1);
+    gl.uniform1f(L.uDepth, 1 / (V.rad * 1.01));
     gl.frontFace(V.flip ? gl.CW : gl.CCW);
     gl.drawArrays(gl.TRIANGLES, 0, V.count);
+    gl.disable(gl.BLEND);
     vMarks(m, s, W, H);
     if (V.anim) vSchedule();
+  }
+
+  // Studio floor: seen from 0.62 rad above, the same angle as the starting view, so a ring there lies flat on it.
+  // The piece rests on its lowest point in whatever pose she gives it. Big files are sampled while she turns the
+  // piece and measured exactly once she lets go.
+  const FLOOR = [0, Math.cos(0.62), Math.sin(0.62)];
+  const SHADOW_LIGHT = [FLOOR[0] - 0.35, FLOOR[1], FLOOR[2] + 0.45];
+  let floorKey = "", floorD = 0;
+  function floorHeight(m) {
+    const a = [0, 1, 2].map((i) => FLOOR[1] * m[3 + i] + FLOOR[2] * m[6 + i]); // the floor's up direction in the file
+    const pos = mesh.pos, c = mesh.stats.center, rough = pos.length > 1.8e6 && (touches.size > 0 || !!V.anim);
+    const key = a.join() + (rough ? "~" : "") + V.count + mesh.name;
+    if (key === floorKey) return floorD;
+    let lo = Infinity;
+    for (let i = 0, step = rough ? 21 : 3; i < pos.length; i += step) {
+      const h = a[0] * pos[i] + a[1] * pos[i + 1] + a[2] * pos[i + 2];
+      if (h < lo) lo = h;
+    }
+    floorKey = key;
+    floorD = lo - (a[0] * c[0] + a[1] * c[1] + a[2] * c[2]);
+    return floorD;
+  }
+  // The shadow's GPU pieces: the flattened piece (with mip levels for the soft blur), two blur buffers, a screen quad.
+  function studioSetup() {
+    const gl = V.gl, N = 1024;
+    try {
+      const tex = (mip) => {
+        const t = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, N, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+        return t;
+      };
+      const target = (t, depth) => {
+        const f = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+        if (depth) {
+          const r = gl.createRenderbuffer();
+          gl.bindRenderbuffer(gl.RENDERBUFFER, r);
+          gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, N, N);
+          gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, r);
+        }
+        const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        if (!ok) throw new Error("framebuffer");
+        return f;
+      };
+      const sp = glProgram(gl, SVS, SFS, ["aPos"]), qp = glProgram(gl, QVS, QFS, ["aQuad"]);
+      const M = tex(true), A = tex(false), B = tex(false), quad = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const st = {
+        N, sp, qp, M, A, B, quad, key: "", fM: target(M, true), fA: target(A), fB: target(B),
+        sl: uniforms(gl, sp, ["uCenter", "uRot", "uScale", "uPan", "uClip", "uFloor", "uLight", "uReach", "uFall"]),
+        ql: uniforms(gl, qp, ["uTex", "uStep", "uSpread", "uBias", "uMix"]),
+      };
+      meshAttribs();
+      gl.useProgram(V.prog);
+      return st;
+    } catch {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      meshAttribs();
+      gl.useProgram(V.prog);
+      return false; // no shadow then; the rest of Studio still works
+    }
+  }
+  // Draws the shadow into the empty frame. The flattened, blurred piece is reused while nothing that shapes it changes
+  // (a new backdrop or metal only redraws it).
+  function studioShadow(U, floor, W, H, sr, gloss) {
+    const gl = V.gl;
+    if (V.st == null) V.st = studioSetup();
+    const st = V.st;
+    if (!st) return;
+    const Q = st.ql, key = [U.rot, U.scale, U.pan, U.clip, floor, W, H, V.count].join();
+    const quad = () => {
+      gl.useProgram(st.qp);
+      gl.disableVertexAttribArray(1);
+      gl.bindBuffer(gl.ARRAY_BUFFER, st.quad);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    };
+    gl.disable(gl.DEPTH_TEST);
+    if (key !== st.key) {
+      st.key = key;
+      const S = st.sl;
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(st.sp);
+      gl.uniform3fv(S.uCenter, U.c);
+      gl.uniformMatrix3fv(S.uRot, false, U.rot);
+      gl.uniform2fv(S.uScale, U.scale);
+      gl.uniform2fv(S.uPan, U.pan);
+      gl.uniform4fv(S.uClip, U.clip);
+      gl.uniform4fv(S.uFloor, floor);
+      gl.uniform3fv(S.uLight, SHADOW_LIGHT);
+      gl.uniform1f(S.uReach, 1 / (1.02 * V.rad));
+      gl.uniform2f(S.uFall, 0.05 * V.rad, 0.6 * V.rad);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, st.fM);
+      gl.viewport(0, 0, st.N, st.N);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, V.count);
+      gl.disable(gl.DEPTH_TEST);
+      gl.bindTexture(gl.TEXTURE_2D, st.M);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      quad();
+      const contact = 0.012 * sr, soft = 0.09 * sr; // CSS px between blur taps; the shadow scales with the piece on screen
+      gl.uniform2f(Q.uMix, 0, 0);
+      gl.uniform2f(Q.uSpread, contact, soft);
+      [[st.fA, st.M, [1 / W, 0], Math.max(0, Math.log2((soft * st.N) / Math.max(W, H)))], [st.fB, st.A, [0, 1 / H], 0]].forEach(([f, t, step, bias]) => {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.uniform2fv(Q.uStep, step);
+        gl.uniform1f(Q.uBias, bias);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      });
+    } else quad();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.bindTexture(gl.TEXTURE_2D, st.B);
+    gl.uniform2fv(Q.uMix, gloss ? [0.45, 0.22] : [0.65, 0.5]);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.enable(gl.DEPTH_TEST);
+    gl.useProgram(V.prog);
+    meshAttribs();
   }
 
   // Measure dots and line, re-projected every frame so they stay on the model.
@@ -1299,6 +1583,7 @@ void main() {
   });
   const lift = (e) => {
     if (!touches.delete(e.pointerId)) return;
+    if (V.studio && !touches.size) vSchedule(); // settle the floor exactly under a big file
     const t = tap;
     if (e.type !== "pointerup" || !t || t.pan || touches.size) return;
     tap = null;
@@ -1340,7 +1625,7 @@ void main() {
   }
   function setFinish(f) {
     V.finish = f;
-    document.querySelectorAll("#vFinish button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.f === f)));
+    document.querySelectorAll("#vFinish button, #sFinish button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.f === f)));
     $("vPlate").hidden = f !== "white"; // plating is only offered for white
     document.querySelectorAll("#vPlate button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.p === (V.rhodium ? "rhodium" : "none"))));
     vSchedule();
@@ -1361,10 +1646,10 @@ void main() {
   }
   $("vTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); });
   $("vViews").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) animateTo(VIEWS[b.dataset.view]); });
-  $("vFinish").addEventListener("click", (e) => {
+  ["vFinish", "sFinish"].forEach((id) => $(id).addEventListener("click", (e) => {
     const b = e.target.closest("[data-f]");
     if (b) { setFinish(b.dataset.f); store.set("gq.finish", V.finish); }
-  });
+  }));
   $("vPlate").addEventListener("click", (e) => {
     const b = e.target.closest("[data-p]");
     if (!b) return;
@@ -1377,19 +1662,80 @@ void main() {
   $("vClear").addEventListener("click", () => { V.pts = []; V.miss = false; showReading(); vSchedule(); });
   $("vRuler").addEventListener("click", () => setMeasure(!V.measuring));
 
-  // Screenshot: the model as she sees it (backdrop, piece, and a finished measurement with its reading).
-  function snapshot() {
+  // Studio: the camera turns the viewer into a photo set. The piece rests on a floor in front of a sweep in the
+  // chosen colour, with a soft shadow (Matte) or a reflection (Gloss); she can still pose it, then share the photo.
+  $("sLook").innerHTML = Object.entries(LOOKS)
+    .map(([id, L]) => `<button type="button" role="radio" data-bg="${id}" style="--hi:${L.hi};--lo:${L.lo}">${L.label}</button>`).join("");
+  function setLook() {
+    const L = LOOKS[V.look.bg], stage = glc.parentElement;
+    if (V.studio) { stage.style.setProperty("--look-hi", L.hi); stage.style.setProperty("--look-lo", L.lo); }
+    else { stage.style.removeProperty("--look-hi"); stage.style.removeProperty("--look-lo"); }
+    document.querySelectorAll("#sLook button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.bg === V.look.bg)));
+    document.querySelectorAll("#sSurface button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.s === V.look.surface)));
+    vSchedule();
+  }
+  const canShareFiles = () => {
+    try { return matchMedia("(pointer: coarse)").matches && !!navigator.canShare && navigator.canShare({ files: [new File([""], "photo.png", { type: "image/png" })] }); } catch { return false; }
+  };
+  function setStudio(on) {
+    V.studio = on;
+    $("vShot").setAttribute("aria-pressed", String(on));
+    $("vTabs").hidden = on;
+    $("pStudio").hidden = !on;
+    if (on) ["View", "Section", "Metal"].forEach((t) => ($("p" + t).hidden = true));
+    else setTab(V.tab);
+    $("sShare").textContent = canShareFiles() ? "Share photo" : "Download photo";
+    setLook();
+  }
+  // Studio has its own history entry, so Done, Esc and back step out of it before closing the viewer.
+  function enterStudio() {
+    if (V.studio) return;
+    setStudio(true);
+    try { history.pushState({ gqViewer: 1, gqStudio: 1 }, ""); } catch {}
+  }
+  const leaveStudio = () => { if (history.state && history.state.gqStudio) history.back(); else setStudio(false); };
+  $("vShot").addEventListener("click", () => (V.studio ? leaveStudio() : enterStudio()));
+  $("sLook").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-bg]");
+    if (b) { V.look.bg = b.dataset.bg; store.set("gq.studio", V.look); setLook(); }
+  });
+  $("sSurface").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-s]");
+    if (b) { V.look.surface = b.dataset.s; store.set("gq.studio", V.look); setLook(); }
+  });
+
+  // The photo: the stage in its on-screen shape at up to 3000 px (never less than the screen's own sharpness),
+  // with the backdrop, the piece and its shadow or reflection, and a finished measurement if one is showing.
+  let grain;
+  function studioShot() {
     if (!V.gl || V.lost || !mesh) return null;
-    vDraw(); // draw now, so the frame is still readable in this same task
-    const w = glc.width, h = glc.height, k = w / glc.clientWidth;
-    if (!w || !h) return null;
+    const W = glc.clientWidth, H = glc.clientHeight;
+    if (!W || !H) return null;
+    V.shotScale = Math.max(Math.min(window.devicePixelRatio || 1, 3), Math.min(3, 3000 / Math.max(W, H)));
+    vDraw(); // drawn now at the photo's size, so the frame is still readable in this same task
+    V.shotScale = 0;
+    const w = glc.width, h = glc.height, k = w / W, L = LOOKS[V.look.bg];
     const out = document.createElement("canvas");
     out.width = w; out.height = h;
     const g = out.getContext("2d"), css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
     const bg = g.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h * 0.4, Math.hypot(w / 2, h * 0.6) * 0.8); // the stage's CSS backdrop
-    bg.addColorStop(0, v("--stage-hi")); bg.addColorStop(1, v("--stage"));
+    bg.addColorStop(0, L.hi); bg.addColorStop(1, L.lo);
     g.fillStyle = bg; g.fillRect(0, 0, w, h);
-    g.drawImage(glc, 0, 0);
+    // A fine, even grain (±1 level) so the smooth sweep doesn't show steps in the photo, dark backdrops especially.
+    if (!grain) {
+      grain = new Int8Array(256 * 256);
+      for (let i = 0; i < grain.length; i++) grain[i] = Math.round(Math.random() + Math.random() - 1);
+    }
+    try {
+      const img = g.getImageData(0, 0, w, h), d = img.data;
+      for (let y = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, i += 4) {
+        const n = grain[((y & 255) << 8) | (x & 255)];
+        d[i] += n; d[i + 1] += n; d[i + 2] += n;
+      }
+      g.putImageData(img, 0, 0);
+    } catch {}
+    g.drawImage(glc, 0, 0, w, h);
+    vDraw(); // back to the screen's size
     if (!V.measuring || !V.pts.length) return out;
     const at = (id, a, b) => [+$(id).getAttribute(a) * k, +$(id).getAttribute(b) * k];
     g.lineCap = "round";
@@ -1415,8 +1761,8 @@ void main() {
     return out;
   }
   // On a phone it opens the share sheet (Save Image, WhatsApp, ...); on a laptop it downloads a PNG.
-  $("vShot").addEventListener("click", () => {
-    const c = snapshot();
+  $("sShare").addEventListener("click", () => {
+    const c = studioShot();
     if (!c) return;
     const name = (mesh.name.replace(/\.stl$/i, "").replace(/[\\/:*?"<>|]+/g, "").trim() || "piece") + ".png";
     const bin = atob(c.toDataURL("image/png").split(",")[1]), bytes = new Uint8Array(bin.length);
@@ -1462,15 +1808,27 @@ void main() {
     if (!V.open) return;
     V.open = false;
     V.anim = null;
+    if (V.studio) setStudio(false);
     viewer.hidden = true;
     document.documentElement.classList.remove("viewer-open");
     document.querySelector("main").inert = false;
     $("expand").focus({ preventScroll: true });
   }
-  const leaveViewer = () => { if (history.state && history.state.gqViewer) history.back(); else closeViewer(); };
-  $("vDone").addEventListener("click", leaveViewer);
-  window.addEventListener("popstate", () => closeViewer());
-  document.addEventListener("keydown", (e) => { if (V.open && e.key === "Escape") leaveViewer(); });
+  // Out of the viewer altogether, past the Studio entry too if it's open.
+  const leaveViewer = () => {
+    const st = history.state || {};
+    if (st.gqStudio) history.go(-2);
+    else if (st.gqViewer) history.back();
+    else closeViewer();
+  };
+  const done = () => (V.studio ? leaveStudio() : leaveViewer());
+  $("vDone").addEventListener("click", done);
+  window.addEventListener("popstate", () => {
+    const st = history.state || {};
+    if (V.studio && !st.gqStudio) setStudio(false);
+    if (!st.gqViewer) closeViewer();
+  });
+  document.addEventListener("keydown", (e) => { if (V.open && e.key === "Escape") done(); });
   // A new file while the viewer is open (dropped on a laptop): show it from the start.
   function viewerMeshChanged() {
     if (!V.open) return;
