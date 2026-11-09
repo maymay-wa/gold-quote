@@ -224,9 +224,10 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(20px, env(safe-area-inset-left, 0px));
 }
 .v-bottom > * { width: 100%; max-width: 460px; justify-self: center; }
-.v-panel { display: grid; gap: 10px; min-height: 152px; align-content: center; } /* the View panel's height, so switching tabs never resizes the model */
+.v-panel { display: grid; gap: 10px; min-height: 158px; align-content: center; } /* the Metal panel's height, so switching tabs never resizes the model */
 .v-panel .seg-sm { margin-top: 0; }
 .seg.seg4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg.seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .v-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .v-views button { min-height: 40px; padding: 0 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--t-sm); }
 .v-panel input[type="range"] { width: 100%; height: 36px; margin: 0; accent-color: var(--solid); }
@@ -238,25 +239,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 .v-tabs button { min-height: 44px; }
 .v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
-/* Rhodium sits beside the tabs but is an on/off switch, not a tab: an outline pill with a tick that fills when on */
-.v-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.v-plate {
-  display: flex; align-items: center; gap: 7px; padding: 0 14px 0 12px; border: 1px solid var(--line); border-radius: 14px;
-  background: var(--bg); color: var(--ink); font: 500 var(--t-sm) var(--font);
-}
-.v-plate::before {
-  content: ""; flex: none; width: 16px; height: 16px; box-sizing: border-box; border: 1.5px solid var(--frame); border-radius: 50%;
-}
-.v-plate[aria-pressed="true"] { border-color: var(--solid); }
-@media (max-width: 380px) { /* small phones: tighter tabs and switch so "Measure" still fits */
-  .v-toolbar { gap: 6px; }
-  .v-tabs button { padding: 0 2px; font-size: var(--t-sm); }
-  .v-plate { gap: 5px; padding: 0 10px 0 9px; }
-}
-.v-plate[aria-pressed="true"]::before {
-  border-color: var(--solid);
-  background: var(--solid) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
-}
+@media (max-width: 380px) { .v-tabs button { padding: 0 2px; font-size: var(--t-sm); } } /* small phones: four tabs still fit */
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
@@ -292,8 +275,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .rates:hover { opacity: .7; }
   .more > summary:hover { text-decoration-color: var(--ink); }
   .v-tabs button[aria-selected="true"]:hover { background: var(--solid); }
-  .v-views button:hover, .v-plate:hover { border-color: var(--frame); }
-  .v-plate[aria-pressed="true"]:hover { border-color: var(--solid); }
+  .v-views button:hover { border-color: var(--frame); }
   .v-clear:hover, .v-done:hover { color: var(--ink); }
   .expand:hover svg { background: #fff; }
 }
@@ -430,6 +412,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" data-view="top">Top</button>
         <button type="button" data-view="home">Reset</button>
       </div>
+    </div>
+    <div class="v-panel" id="pMetal" role="tabpanel" hidden>
       <div class="seg seg-sm" id="vFinish" role="radiogroup" aria-label="Finish">
         <button type="button" role="radio" data-f="white">White</button>
         <button type="button" role="radio" data-f="rose">Rose</button>
@@ -439,6 +423,10 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" role="radio" data-k="9">9K</button>
         <button type="button" role="radio" data-k="14">14K</button>
         <button type="button" role="radio" data-k="18">18K</button>
+      </div>
+      <div class="seg seg-sm seg2" id="vPlate" role="radiogroup" aria-label="Plating">
+        <button type="button" role="radio" data-p="none">Unplated</button>
+        <button type="button" role="radio" data-p="rhodium">Rhodium plated</button>
       </div>
     </div>
     <div class="v-panel" id="pSection" role="tabpanel" hidden>
@@ -454,13 +442,11 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
       <p class="v-read" id="vRead" aria-live="polite">Tap two points on the piece</p>
       <button type="button" class="v-clear" id="vClear" hidden>Clear</button>
     </div>
-    <div class="v-toolbar">
-      <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
-        <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
-        <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
-        <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
-      </div>
-      <button type="button" class="v-plate" id="vRhodium" aria-pressed="false" title="Rhodium-plated white gold">Rhodium</button>
+    <div class="seg seg4 v-tabs" id="vTabs" role="tablist" aria-label="Tools">
+      <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
+      <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
+      <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
+      <button type="button" role="tab" data-tab="Metal" aria-selected="false">Metal</button>
     </div>
   </div>
 </div>
@@ -1320,7 +1306,7 @@ void main() {
   function setTab(name) {
     V.tab = name;
     document.querySelectorAll("#vTabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
-    ["View", "Section", "Measure"].forEach((t) => ($("p" + t).hidden = t !== name));
+    ["View", "Section", "Measure", "Metal"].forEach((t) => ($("p" + t).hidden = t !== name));
     glc.classList.toggle("measuring", name === "Measure");
     showReading();
     vSchedule();
@@ -1328,7 +1314,8 @@ void main() {
   function setFinish(f) {
     V.finish = f;
     document.querySelectorAll("#vFinish button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.f === f)));
-    $("vRhodium").setAttribute("aria-pressed", String(f === "white" && V.rhodium)); // plating only applies to white
+    const plate = f === "white" && V.rhodium ? "rhodium" : "none"; // yellow and rose are always shown unplated
+    document.querySelectorAll("#vPlate button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.p === plate)));
     vSchedule();
   }
   // A cut removes the half of the piece facing the camera, so the cut face is in view.
@@ -1351,11 +1338,15 @@ void main() {
     const b = e.target.closest("[data-f]");
     if (b) { setFinish(b.dataset.f); store.set("gq.finish", V.finish); }
   });
-  // On white it switches plating on and off. On yellow or rose it moves to plated white, since that is what she asked to see.
-  $("vRhodium").addEventListener("click", () => {
-    V.rhodium = V.finish === "white" ? !V.rhodium : true;
+  // Rhodium plating turns any gold white, so picking it moves to plated white. Unplated on white turns plating off;
+  // on yellow or rose it is already the case.
+  $("vPlate").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-p]");
+    if (!b) return;
+    if (b.dataset.p === "rhodium") V.rhodium = true;
+    else if (V.finish === "white") V.rhodium = false;
     store.set("gq.rhodium", V.rhodium);
-    setFinish("white");
+    setFinish(b.dataset.p === "rhodium" ? "white" : V.finish);
     store.set("gq.finish", V.finish);
   });
   $("vAxis").addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b) setCut(+b.dataset.a); });
