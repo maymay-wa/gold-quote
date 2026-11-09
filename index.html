@@ -226,7 +226,6 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-bottom > * { width: 100%; max-width: 460px; justify-self: center; }
 .v-panel { display: grid; gap: 10px; min-height: 94px; align-content: center; }
 .v-panel .seg-sm { margin-top: 0; }
-.seg.seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .seg.seg4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .v-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .v-views button { min-height: 40px; padding: 0 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--t-sm); }
@@ -411,8 +410,9 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" data-view="top">Top</button>
         <button type="button" data-view="home">Reset</button>
       </div>
-      <div class="seg seg-sm seg2" id="vFinish" role="radiogroup" aria-label="Finish">
+      <div class="seg seg-sm" id="vFinish" role="radiogroup" aria-label="Finish">
         <button type="button" role="radio" data-f="gold">Gold</button>
+        <button type="button" role="radio" data-f="metal">Metal</button>
         <button type="button" role="radio" data-f="clay">Clay</button>
       </div>
     </div>
@@ -660,6 +660,59 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
   const total = round2(subtotal + vat);
   return { weight, fine, goldIlsG, gold, printing, subtotal, vat, total, totalUsd: total / usdIls };
 }
+
+// Smooth normals for the polished finish, so a reflection glides over a curve instead of breaking at every facet.
+// Corners at the same spot share the area-weighted average of the faces meeting there, except across edges sharper
+// than creaseDeg, which stay crisp. Same layout as the flat normals: 4 bytes per vertex (x, y, z, pad).
+function smoothNormals(pos, flip = false, creaseDeg = 35) {
+  const n = pos.length / 9, corners = n * 3;
+  // Weld corners by their exact coordinates (STL exporters repeat shared corners bit for bit).
+  const bits = new Uint32Array(pos.buffer, pos.byteOffset, pos.length);
+  const key = (i) => (bits[i] === 0x80000000 ? 0 : bits[i]); // −0 and +0 are the same spot
+  let size = 1;
+  while (size < corners) size <<= 1;
+  const table = new Int32Array(size).fill(-1), id = new Int32Array(corners), first = new Int32Array(corners);
+  let verts = 0;
+  for (let c = 0; c < corners; c++) {
+    const a = key(c * 3), b = key(c * 3 + 1), d = key(c * 3 + 2);
+    let h = (Math.imul(a, 73856093) ^ Math.imul(b, 19349663) ^ Math.imul(d, 83492791)) & (size - 1);
+    for (;;) {
+      const t = table[h];
+      if (t < 0) { table[h] = verts; first[verts] = c; id[c] = verts++; break; }
+      const f = first[t] * 3;
+      if (key(f) === a && key(f + 1) === b && key(f + 2) === d) { id[c] = t; break; }
+      h = (h + 1) & (size - 1);
+    }
+  }
+  // Face normals: the cross product's length is twice the area, which weights the average.
+  const fn = new Float32Array(n * 3), fl = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const b = i * 9;
+    const e1x = pos[b + 3] - pos[b], e1y = pos[b + 4] - pos[b + 1], e1z = pos[b + 5] - pos[b + 2];
+    const e2x = pos[b + 6] - pos[b], e2y = pos[b + 7] - pos[b + 1], e2z = pos[b + 8] - pos[b + 2];
+    const x = e1y * e2z - e1z * e2y, y = e1z * e2x - e1x * e2z, z = e1x * e2y - e1y * e2x;
+    fn[i * 3] = x; fn[i * 3 + 1] = y; fn[i * 3 + 2] = z;
+    fl[i] = Math.sqrt(x * x + y * y + z * z);
+  }
+  // Faces around each welded vertex.
+  const start = new Int32Array(verts + 1);
+  for (let c = 0; c < corners; c++) start[id[c] + 1]++;
+  for (let v = 0; v < verts; v++) start[v + 1] += start[v];
+  const fill = start.slice(0, verts), faces = new Int32Array(corners);
+  for (let c = 0; c < corners; c++) faces[fill[id[c]]++] = (c / 3) | 0;
+  const cos = Math.cos((creaseDeg * Math.PI) / 180), sgn = flip ? -127 : 127, out = new Int8Array(n * 12);
+  for (let c = 0; c < corners; c++) {
+    const f = (c / 3) | 0, v = id[c], ax = fn[f * 3], ay = fn[f * 3 + 1], az = fn[f * 3 + 2], al = fl[f];
+    let x = 0, y = 0, z = 0;
+    for (let j = start[v]; j < start[v + 1]; j++) {
+      const g = faces[j], bx = fn[g * 3], by = fn[g * 3 + 1], bz = fn[g * 3 + 2];
+      if (ax * bx + ay * by + az * bz >= cos * al * fl[g]) { x += bx; y += by; z += bz; }
+    }
+    const k = sgn / (Math.sqrt(x * x + y * y + z * z) || 1);
+    out[c * 4] = Math.round(x * k); out[c * 4 + 1] = Math.round(y * k); out[c * 4 + 2] = Math.round(z * k);
+  }
+  return out;
+}
 // @pure-end
 
 (function () {
@@ -906,11 +959,12 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
   const FINISH = {
     gold: { gold: 1, base: [0, 0, 0], spec: [0.14, 0.12, 0.07], shine: 40 }, // colours come from the thumbnail's palette
     clay: { gold: 0, base: [0.8, 0.79, 0.77], spec: [0.16, 0.16, 0.16], shine: 20 },
+    metal: { metal: 1, gold: 1, base: [0, 0, 0], spec: [0, 0, 0], shine: 1 }, // polished: reflections, smooth normals
   };
   const V = {
-    ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null, count: 0, rad: 1, flip: false,
-    anim: null, raf: 0, viewFor: null, tab: "View", cut: null, pts: [], miss: false,
-    finish: store.get("gq.finish") === "clay" ? "clay" : "gold",
+    ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, sbuf: null, sbuilt: null, built: null,
+    count: 0, rad: 1, flip: false, anim: null, raf: 0, viewFor: null, tab: "View", cut: null, pts: [], miss: false,
+    finish: FINISH[store.get("gq.finish")] ? store.get("gq.finish") : "gold",
   };
 
   const VS = `
@@ -941,13 +995,42 @@ uniform vec3 uBase;
 uniform vec3 uSpec;
 uniform float uShine;
 uniform float uGold;
+uniform float uMetal;
 uniform vec3 uCap;
 varying vec3 vNrm;
 varying float vCut;
+// A jeweller's light tent, fixed to the camera: a white sweep below, a dark seam where it meets the pale walls
+// (the stripe that makes polish read as polish), a bright ceiling, a big softbox upper left, a strip light on the
+// right and a white card around the lens. r is a view-space direction (x right, y up, z towards her).
+float studio(vec3 r) {
+  float c = mix(0.36, 0.42, smoothstep(-0.6, 0.3, r.y));
+  float seam = (r.y + 0.15) / 0.22;
+  c *= 1.0 - 0.93 * exp(-seam * seam);
+  c += 0.9 * smoothstep(0.5, 0.95, r.y);
+  c += 2.4 * smoothstep(0.78, 0.93, dot(r, normalize(vec3(-0.6, 0.55, 0.58))));
+  c += 1.5 * smoothstep(0.86, 0.95, dot(r, normalize(vec3(0.85, 0.05, 0.52))));
+  c += 0.55 * smoothstep(0.7, 1.0, r.z) * smoothstep(-0.45, 0.0, r.y); // white card around the camera, so faces turned to her stay bright
+  return c;
+}
 void main() {
   if (vCut > 0.0) discard;
   if (!gl_FrontFacing) { gl_FragColor = vec4(uCap, 1.0); return; }
   vec3 n = normalize(vNrm);
+  if (uMetal > 0.5) {
+    // Polished yellow gold: the studio mirrored in the surface, tinted by gold's reflectance (Schlick Fresnel).
+    float cv = max(n.z, 0.0);
+    vec3 r = 2.0 * n.z * n - vec3(0.0, 0.0, 1.0);
+    vec3 f0 = vec3(1.0, 0.71, 0.29);
+    vec3 F = f0 + (1.0 - f0) * pow(1.0 - cv, 5.0);
+    float e = studio(r);
+    // Dim reflections are mostly gold seen in gold, so they take the colour twice and go a deep warm brown.
+    vec3 lin = e * mix(F * F, F, smoothstep(0.0, 0.8, e)) + vec3(0.012, 0.006, 0.001);
+    float top = max(lin.r, max(lin.g, lin.b));
+    vec3 c = lin / max(1.0, top); // keep the hue in bright areas instead of clipping to cream
+    c = mix(c, vec3(1.0, 0.97, 0.9), 0.55 * smoothstep(1.6, 3.2, top)); // only the hottest highlights go white
+    gl_FragColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+    return;
+  }
   vec3 key = normalize(vec3(-0.35, 0.62, 0.7));
   vec3 fill = normalize(vec3(0.6, -0.25, 0.5));
   float d = max(dot(n, key), 0.0);
@@ -980,12 +1063,12 @@ void main() {
       if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
       gl.useProgram(p);
       V.loc = { aPos: gl.getAttribLocation(p, "aPos"), aNrm: gl.getAttribLocation(p, "aNrm") };
-      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uBase", "uSpec", "uShine", "uGold", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
+      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uBase", "uSpec", "uShine", "uGold", "uMetal", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
     } catch { return false; }
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(0, 0, 0, 0);
     gl.uniform3f(V.loc.uCap, 0.231, 0.224, 0.212); // --solid
-    V.gl = gl; V.built = null; V.pbuf = V.nbuf = null;
+    V.gl = gl; V.built = V.sbuilt = null; V.pbuf = V.nbuf = V.sbuf = null;
     return true;
   }
 
@@ -1016,8 +1099,19 @@ void main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, V.nbuf);
     gl.bufferData(gl.ARRAY_BUFFER, nrm, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(V.loc.aNrm);
+    V.built = mesh; V.sbuilt = null; V.count = n * 3; V.rad = Math.sqrt(rad) || 1; V.flip = flip;
+  }
+  // Metal reads smooth normals (built the first time it's shown for this mesh); Gold and Clay keep the honest flat ones.
+  function bindNormals(smooth) {
+    const gl = V.gl;
+    if (smooth && V.sbuilt !== mesh) {
+      V.sbuf = V.sbuf || gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, V.sbuf);
+      gl.bufferData(gl.ARRAY_BUFFER, smoothNormals(mesh.pos, V.flip), gl.STATIC_DRAW);
+      V.sbuilt = mesh;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, smooth ? V.sbuf : V.nbuf);
     gl.vertexAttribPointer(V.loc.aNrm, 3, gl.BYTE, true, 4, 0);
-    V.built = mesh; V.count = n * 3; V.rad = Math.sqrt(rad) || 1; V.flip = flip;
   }
 
   // File → view rotation (row-major) and s = CSS px per file unit.
@@ -1061,6 +1155,8 @@ void main() {
     gl.uniform3fv(L.uSpec, f.spec);
     gl.uniform1f(L.uShine, f.shine);
     gl.uniform1f(L.uGold, f.gold);
+    gl.uniform1f(L.uMetal, f.metal || 0);
+    bindNormals(!!f.metal);
     gl.frontFace(V.flip ? gl.CW : gl.CCW);
     gl.drawArrays(gl.TRIANGLES, 0, V.count);
     vMarks(m, s, W, H);
