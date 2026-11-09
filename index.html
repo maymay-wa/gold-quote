@@ -224,7 +224,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(20px, env(safe-area-inset-left, 0px));
 }
 .v-bottom > * { width: 100%; max-width: 460px; justify-self: center; }
-.v-panel { display: grid; gap: 10px; min-height: 94px; align-content: center; }
+.v-panel { display: grid; gap: 10px; min-height: 152px; align-content: center; } /* the View panel's height, so switching tabs never resizes the model */
 .v-panel .seg-sm { margin-top: 0; }
 .seg.seg4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .v-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -414,6 +414,11 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" role="radio" data-f="white">White</button>
         <button type="button" role="radio" data-f="rose">Rose</button>
         <button type="button" role="radio" data-f="yellow">Yellow</button>
+      </div>
+      <div class="seg seg-sm" id="vKarats" role="radiogroup" aria-label="Gold type">
+        <button type="button" role="radio" data-k="9">9K</button>
+        <button type="button" role="radio" data-k="14">14K</button>
+        <button type="button" role="radio" data-k="18">18K</button>
       </div>
     </div>
     <div class="v-panel" id="pSection" role="tabpanel" hidden>
@@ -956,12 +961,16 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     side: { q: qAxis(0, 1, 0, -Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
     top: { q: qAxis(1, 0, 0, Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
   };
-  // Polished alloys: how much of each colour (linear RGB) the metal reflects head-on, then an exposure.
-  // White has no colour of its own to carry it, so it gets more light to read as bright rhodium, not steel.
+  // Polished alloys by karat: how much of each colour (linear RGB) the metal reflects head-on, then an exposure.
+  // Yellow gets richer and deeper as the gold content rises (9K is pale, 18K warm). Rose is copper over gold,
+  // so the lower the karat the more copper per gram of gold and the pinker it gets (18K is peachy).
+  // White is rhodium-plated, as white gold is sold, so it looks the same at every karat; it has no colour of
+  // its own to carry it, so it gets more light to read as bright rhodium, not steel.
+  const RHODIUM = [0.9, 0.9, 0.92, 1.4];
   const FINISH = {
-    white: [0.9, 0.9, 0.92, 1.4], // rhodium-plated, as white gold is sold
-    rose: [0.98, 0.67, 0.5, 1.15],
-    yellow: [1.0, 0.7, 0.22, 1.0],
+    white: { 9: RHODIUM, 14: RHODIUM, 18: RHODIUM },
+    rose: { 9: [0.97, 0.63, 0.49, 1.15], 14: [0.98, 0.67, 0.5, 1.15], 18: [1.0, 0.7, 0.46, 1.15] },
+    yellow: { 9: [0.98, 0.74, 0.36, 1.05], 14: [1.0, 0.7, 0.22, 1.0], 18: [1.0, 0.68, 0.15, 1.0] },
   };
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
@@ -1113,7 +1122,7 @@ void main() {
       a[cut.axis] = cut.sign;
       gl.uniform4f(L.uClip, a[0], a[1], a[2], cut.sign * (cut.value - c[cut.axis]));
     } else gl.uniform4f(L.uClip, 0, 0, 0, 1);
-    gl.uniform4fv(L.uAlloy, FINISH[V.finish]);
+    gl.uniform4fv(L.uAlloy, FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
     gl.frontFace(V.flip ? gl.CW : gl.CCW);
     gl.drawArrays(gl.TRIANGLES, 0, V.count);
     vMarks(m, s, W, H);
@@ -1451,7 +1460,8 @@ void main() {
 
     // toggles
     document.querySelectorAll("#units button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
-    document.querySelectorAll("#karats button").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
+    document.querySelectorAll("#karats button, #vKarats button").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
+    if (V.open) vSchedule();
     $("lVat").textContent = "VAT " + settings.vatPct + "%";
 
     // piece
@@ -1520,11 +1530,14 @@ void main() {
     if (!b) return;
     settings.unit = b.dataset.u; saveSettings(); render();
   });
-  $("karats").addEventListener("click", (e) => {
+  // The viewer's karat picker is the same setting as the main one, so the colour she sees is the karat she quotes.
+  const pickKarat = (e) => {
     const b = e.target.closest("[data-k]");
     if (!b) return;
     settings.karat = +b.dataset.k; saveSettings(); render();
-  });
+  };
+  $("karats").addEventListener("click", pickKarat);
+  $("vKarats").addEventListener("click", pickKarat);
   $("refresh").addEventListener("click", refreshPrices);
 
   const numFields = [
