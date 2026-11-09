@@ -234,12 +234,12 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-panel input[type="range"]:disabled { opacity: .35; }
 /* Measuring: a ruler icon next to Done switches it on; the reading floats over the model's top-left corner */
 .v-actions { flex: none; display: flex; align-items: center; gap: 4px; }
-.v-ruler { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
-.v-ruler svg {
+.v-icon { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
+.v-icon svg {
   width: 36px; height: 36px; box-sizing: border-box; padding: 7px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
   fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
 }
-.v-ruler[aria-pressed="true"] svg { border-color: var(--solid); background: var(--solid); stroke: var(--on-ink); }
+.v-icon[aria-pressed="true"] svg, .v-icon:active svg { border-color: var(--solid); background: var(--solid); stroke: var(--on-ink); }
 .v-measure {
   position: absolute; top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); max-width: calc(100% - 24px);
   display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 6px 0 14px; box-sizing: border-box;
@@ -289,7 +289,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .v-tabs button[aria-selected="true"]:hover { background: var(--solid); }
   .v-views button:hover { border-color: var(--frame); }
   .v-clear:hover, .v-done:hover { color: var(--ink); }
-  .v-ruler:not([aria-pressed="true"]):hover svg { border-color: var(--frame); }
+  .v-icon:not([aria-pressed="true"]):not(:active):hover svg { border-color: var(--frame); }
   .expand:hover svg { background: #fff; }
 }
 </style>
@@ -411,7 +411,10 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   <div class="v-top">
     <div class="v-title"><span class="v-name" id="vName"></span><span class="v-dims" id="vDims"></span></div>
     <div class="v-actions">
-      <button type="button" class="v-ruler" id="vRuler" aria-pressed="false" aria-label="Measure">
+      <button type="button" class="v-icon" id="vShot" aria-label="Screenshot">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.2l1.6-2.2h6.4L16.8 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z"/><circle cx="12" cy="12.8" r="3.4"/></svg>
+      </button>
+      <button type="button" class="v-icon" id="vRuler" aria-pressed="false" aria-label="Measure">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 16.5 3 21 7.5 7.5 21Z"/><path d="M7.05 12.45l1.8 1.8M9.75 9.75l2.6 2.6M12.45 7.05l1.8 1.8"/></svg>
       </button>
       <button type="button" class="v-done" id="vDone">Done</button>
@@ -1373,6 +1376,62 @@ void main() {
   $("vCut").addEventListener("input", (e) => { if (V.cut) { V.cut.t = e.target.value / 1000; vSchedule(); } });
   $("vClear").addEventListener("click", () => { V.pts = []; V.miss = false; showReading(); vSchedule(); });
   $("vRuler").addEventListener("click", () => setMeasure(!V.measuring));
+
+  // Screenshot: the model as she sees it (backdrop, piece, and a finished measurement with its reading).
+  function snapshot() {
+    if (!V.gl || V.lost || !mesh) return null;
+    vDraw(); // draw now, so the frame is still readable in this same task
+    const w = glc.width, h = glc.height, k = w / glc.clientWidth;
+    if (!w || !h) return null;
+    const out = document.createElement("canvas");
+    out.width = w; out.height = h;
+    const g = out.getContext("2d"), css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
+    const bg = g.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h * 0.4, Math.hypot(w / 2, h * 0.6) * 0.8); // the stage's CSS backdrop
+    bg.addColorStop(0, v("--stage-hi")); bg.addColorStop(1, v("--stage"));
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.drawImage(glc, 0, 0);
+    if (!V.measuring || !V.pts.length) return out;
+    const at = (id, a, b) => [+$(id).getAttribute(a) * k, +$(id).getAttribute(b) * k];
+    g.lineCap = "round";
+    if (V.pts.length === 2) {
+      const [a, b] = [at("mLine", "x1", "y1"), at("mLine", "x2", "y2")];
+      for (const [col, lw] of [["#fff", 5], [v("--ink"), 1.5]]) { g.strokeStyle = col; g.lineWidth = lw * k; g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); }
+    }
+    for (const id of ["mA", "mB"].slice(0, V.pts.length)) {
+      g.beginPath(); g.arc(...at(id, "cx", "cy"), 5 * k, 0, 2 * Math.PI);
+      g.fillStyle = v("--ink"); g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 2.5 * k; g.stroke();
+    }
+    if (V.pts.length === 2) { // the reading, in the corner where it shows on screen
+      const [a, b] = V.pts, mm = fmt2.format(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) * UNIT_TO_MM[settings.unit]);
+      const font = v("--font"), big = 30 * k, small = 16 * k;
+      g.font = `300 ${big}px ${font}`; const wn = g.measureText(mm).width;
+      g.font = `400 ${small}px ${font}`; const wu = g.measureText(" mm").width;
+      const x = 12 * k, y = 10 * k, pad = 14 * k, bh = 48 * k;
+      g.fillStyle = "rgba(255, 255, 255, .9)"; g.beginPath(); if (g.roundRect) g.roundRect(x, y, wn + wu + pad * 2, bh, 12 * k); else g.rect(x, y, wn + wu + pad * 2, bh); g.fill();
+      g.textBaseline = "alphabetic";
+      g.fillStyle = v("--ink"); g.font = `300 ${big}px ${font}`; g.fillText(mm, x + pad, y + bh * 0.72);
+      g.fillStyle = v("--muted"); g.font = `400 ${small}px ${font}`; g.fillText(" mm", x + pad + wn, y + bh * 0.72);
+    }
+    return out;
+  }
+  // On a phone it opens the share sheet (Save Image, WhatsApp, ...); on a laptop it downloads a PNG.
+  $("vShot").addEventListener("click", () => {
+    const c = snapshot();
+    if (!c) return;
+    const name = (mesh.name.replace(/\.stl$/i, "").replace(/[\\/:*?"<>|]+/g, "").trim() || "piece") + ".png";
+    const bin = atob(c.toDataURL("image/png").split(",")[1]), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const file = new File([bytes], name, { type: "image/png" }); // built synchronously, so the share keeps the tap's permission
+    const download = () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file); a.download = name;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+    };
+    const phone = matchMedia("(pointer: coarse)").matches;
+    if (phone && navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file] }).catch((e) => { if (e.name !== "AbortError") download(); });
+    else download();
+  });
   setFinish(V.finish);
 
   // Open and close. Back (or the iOS edge swipe) closes it too.
