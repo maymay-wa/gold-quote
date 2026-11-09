@@ -238,6 +238,25 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 .v-tabs button { min-height: 44px; }
 .v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
+/* Rhodium sits beside the tabs but is an on/off switch, not a tab: an outline pill with a tick that fills when on */
+.v-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.v-plate {
+  display: flex; align-items: center; gap: 7px; padding: 0 14px 0 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--bg); color: var(--ink); font: 500 var(--t-sm) var(--font);
+}
+.v-plate::before {
+  content: ""; flex: none; width: 16px; height: 16px; box-sizing: border-box; border: 1.5px solid var(--frame); border-radius: 50%;
+}
+.v-plate[aria-pressed="true"] { border-color: var(--solid); }
+@media (max-width: 380px) { /* small phones: tighter tabs and switch so "Measure" still fits */
+  .v-toolbar { gap: 6px; }
+  .v-tabs button { padding: 0 2px; font-size: var(--t-sm); }
+  .v-plate { gap: 5px; padding: 0 10px 0 9px; }
+}
+.v-plate[aria-pressed="true"]::before {
+  border-color: var(--solid);
+  background: var(--solid) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
+}
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
@@ -273,7 +292,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .rates:hover { opacity: .7; }
   .more > summary:hover { text-decoration-color: var(--ink); }
   .v-tabs button[aria-selected="true"]:hover { background: var(--solid); }
-  .v-views button:hover { border-color: var(--frame); }
+  .v-views button:hover, .v-plate:hover { border-color: var(--frame); }
+  .v-plate[aria-pressed="true"]:hover { border-color: var(--solid); }
   .v-clear:hover, .v-done:hover { color: var(--ink); }
   .expand:hover svg { background: #fff; }
 }
@@ -434,10 +454,13 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
       <p class="v-read" id="vRead" aria-live="polite">Tap two points on the piece</p>
       <button type="button" class="v-clear" id="vClear" hidden>Clear</button>
     </div>
-    <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
-      <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
-      <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
-      <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
+    <div class="v-toolbar">
+      <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
+        <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
+        <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
+        <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
+      </div>
+      <button type="button" class="v-plate" id="vRhodium" aria-pressed="false" title="Rhodium-plated white gold">Rhodium</button>
     </div>
   </div>
 </div>
@@ -973,10 +996,13 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     rose: { 9: [0.97, 0.72, 0.56, 1.4], 14: [0.98, 0.75, 0.545, 1.4], 18: [1.0, 0.78, 0.54, 1.4] },
     yellow: { 9: [1.0, 0.85, 0.56, 1.5], 14: [1.0, 0.82, 0.485, 1.5], 18: [1.0, 0.79, 0.4, 1.5] },
   };
+  // White with the Rhodium switch on: plating hides the alloy, so it is the same bright, faintly cool white at every karat.
+  const RHODIUM = [0.9, 0.9, 0.92, 1.6];
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
     count: 0, rad: 1, flip: false, anim: null, raf: 0, viewFor: null, tab: "View", cut: null, pts: [], miss: false,
     finish: FINISH[store.get("gq.finish")] ? store.get("gq.finish") : "yellow",
+    rhodium: store.get("gq.rhodium") === true, // white only: show it rhodium-plated
   };
 
   const VS = `
@@ -1124,7 +1150,7 @@ void main() {
       a[cut.axis] = cut.sign;
       gl.uniform4f(L.uClip, a[0], a[1], a[2], cut.sign * (cut.value - c[cut.axis]));
     } else gl.uniform4f(L.uClip, 0, 0, 0, 1);
-    gl.uniform4fv(L.uAlloy, FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
+    gl.uniform4fv(L.uAlloy, V.finish === "white" && V.rhodium ? RHODIUM : FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
     gl.frontFace(V.flip ? gl.CW : gl.CCW);
     gl.drawArrays(gl.TRIANGLES, 0, V.count);
     vMarks(m, s, W, H);
@@ -1302,6 +1328,7 @@ void main() {
   function setFinish(f) {
     V.finish = f;
     document.querySelectorAll("#vFinish button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.f === f)));
+    $("vRhodium").setAttribute("aria-pressed", String(f === "white" && V.rhodium)); // plating only applies to white
     vSchedule();
   }
   // A cut removes the half of the piece facing the camera, so the cut face is in view.
@@ -1323,6 +1350,13 @@ void main() {
   $("vFinish").addEventListener("click", (e) => {
     const b = e.target.closest("[data-f]");
     if (b) { setFinish(b.dataset.f); store.set("gq.finish", V.finish); }
+  });
+  // On white it switches plating on and off. On yellow or rose it moves to plated white, since that is what she asked to see.
+  $("vRhodium").addEventListener("click", () => {
+    V.rhodium = V.finish === "white" ? !V.rhodium : true;
+    store.set("gq.rhodium", V.rhodium);
+    setFinish("white");
+    store.set("gq.finish", V.finish);
   });
   $("vAxis").addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b) setCut(+b.dataset.a); });
   $("vCut").addEventListener("input", (e) => { if (V.cut) { V.cut.t = e.target.value / 1000; vSchedule(); } });
