@@ -964,13 +964,14 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   // Polished alloys by karat: how much of each colour (linear RGB) the metal reflects head-on, then an exposure.
   // Yellow gets richer and deeper as the gold content rises (9K is pale, 18K warm). Rose is copper over gold,
   // so the lower the karat the more copper per gram of gold and the pinker it gets (18K is peachy).
-  // White is rhodium-plated, as white gold is sold, so it looks the same at every karat; it has no colour of
-  // its own to carry it, so it gets more light to read as bright rhodium, not steel.
-  const RHODIUM = [0.9, 0.9, 0.92, 1.6];
+  // White is shown unplated: 9K a faint cream, 18K a greyer, slightly darker white. White has no colour of its
+  // own to carry it, so it gets more light to read as bright metal, not steel.
+  // Fitted to two photos of real 9ct and 18ct bands: one saturated, one pale and close to measured alloy colours,
+  // landing between them and nearer the pale one.
   const FINISH = {
-    white: { 9: RHODIUM, 14: RHODIUM, 18: RHODIUM },
-    rose: { 9: [0.97, 0.63, 0.46, 1.4], 14: [0.98, 0.67, 0.46, 1.4], 18: [1.0, 0.71, 0.44, 1.4] },
-    yellow: { 9: [1.0, 0.81, 0.52, 1.5], 14: [1.0, 0.775, 0.38, 1.5], 18: [1.0, 0.74, 0.25, 1.5] }, // fitted to a photo of real 9ct and 18ct bands
+    white: { 9: [0.9, 0.89, 0.86, 1.7], 14: [0.9, 0.88, 0.85, 1.56], 18: [0.9, 0.875, 0.85, 1.44] },
+    rose: { 9: [0.97, 0.72, 0.56, 1.4], 14: [0.98, 0.75, 0.545, 1.4], 18: [1.0, 0.78, 0.54, 1.4] },
+    yellow: { 9: [1.0, 0.85, 0.56, 1.5], 14: [1.0, 0.82, 0.485, 1.5], 18: [1.0, 0.79, 0.4, 1.5] },
   };
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
