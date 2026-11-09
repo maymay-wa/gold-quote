@@ -956,11 +956,12 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     side: { q: qAxis(0, 1, 0, -Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
     top: { q: qAxis(1, 0, 0, Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
   };
-  // Polished alloys: how much of each colour (linear RGB) the metal reflects head-on.
+  // Polished alloys: how much of each colour (linear RGB) the metal reflects head-on, then an exposure.
+  // White has no colour of its own to carry it, so it gets more light to read as bright rhodium, not steel.
   const FINISH = {
-    white: [0.7, 0.71, 0.73], // rhodium-plated, as white gold is sold
-    rose: [1.0, 0.62, 0.5],
-    yellow: [1.0, 0.71, 0.29],
+    white: [0.9, 0.9, 0.92, 1.4], // rhodium-plated, as white gold is sold
+    rose: [0.98, 0.67, 0.5, 1.15],
+    yellow: [1.0, 0.7, 0.22, 1.0],
   };
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
@@ -992,7 +993,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec3 uF0;
+uniform vec4 uAlloy; // rgb: reflectance head-on, a: exposure
 uniform vec3 uCap;
 varying vec3 vNrm;
 varying float vCut;
@@ -1016,10 +1017,11 @@ void main() {
   // Polished metal: the studio mirrored in the surface, tinted by the alloy's reflectance (Schlick Fresnel).
   float cv = max(n.z, 0.0);
   vec3 r = 2.0 * n.z * n - vec3(0.0, 0.0, 1.0);
-  vec3 F = uF0 + (1.0 - uF0) * pow(1.0 - cv, 5.0);
-  float e = studio(r);
+  vec3 f0 = uAlloy.rgb;
+  vec3 F = f0 + (1.0 - f0) * pow(1.0 - cv, 5.0);
+  float e = studio(r) * uAlloy.a;
   // Dim reflections are mostly metal seen in metal, so they take the colour twice and go deep and rich.
-  vec3 lin = e * mix(F * F, F, smoothstep(0.0, 0.8, e)) + 0.012 * uF0 * uF0;
+  vec3 lin = e * mix(F * F, F, smoothstep(0.2, 1.4, e)) + 0.012 * f0 * f0;
   float top = max(lin.r, max(lin.g, lin.b));
   vec3 c = lin / max(1.0, top); // keep the hue in bright areas instead of clipping to cream
   c = mix(c, vec3(1.0, 0.97, 0.92), 0.55 * smoothstep(1.6, 3.2, top)); // only the hottest highlights go white
@@ -1045,7 +1047,7 @@ void main() {
       if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
       gl.useProgram(p);
       V.loc = { aPos: gl.getAttribLocation(p, "aPos"), aNrm: gl.getAttribLocation(p, "aNrm") };
-      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uF0", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
+      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uAlloy", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
     } catch { return false; }
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(0, 0, 0, 0);
@@ -1111,7 +1113,7 @@ void main() {
       a[cut.axis] = cut.sign;
       gl.uniform4f(L.uClip, a[0], a[1], a[2], cut.sign * (cut.value - c[cut.axis]));
     } else gl.uniform4f(L.uClip, 0, 0, 0, 1);
-    gl.uniform3fv(L.uF0, FINISH[V.finish]);
+    gl.uniform4fv(L.uAlloy, FINISH[V.finish]);
     gl.frontFace(V.flip ? gl.CW : gl.CCW);
     gl.drawArrays(gl.TRIANGLES, 0, V.count);
     vMarks(m, s, W, H);
