@@ -84,12 +84,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sec { display: grid; gap: 22px; padding-block: 28px; border-bottom: 1px solid var(--line); text-align: center; }
 .label { margin: 0; font-size: var(--t-sm); font-weight: 400; line-height: 1.3; color: var(--muted); }
 
+.thumb { position: relative; width: 128px; height: 128px; }
 #view {
-  display: block; width: 128px; height: 128px; border-radius: 16px;
+  display: block; width: 100%; height: 100%; border-radius: 16px;
   background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 80%);
   touch-action: pan-y; cursor: grab;
 }
 #view:active { cursor: grabbing; }
+.expand { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
+.expand svg {
+  width: 28px; height: 28px; padding: 6px; border-radius: 9px; background: rgba(255, 255, 255, .9);
+  fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
 .piece-info { display: grid; justify-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .fname {
   min-width: 0; font-size: var(--t-body); font-weight: 500; line-height: 1.35; overflow-wrap: anywhere;
@@ -190,8 +196,49 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 @media (max-width: 360px) {
   :root { --t-fig: 32px; }
-  #view { width: 112px; height: 112px; }
+  .thumb { width: 112px; height: 112px; }
 }
+
+/* Full-screen viewer: top bar, the model, then the tool panel and tabs */
+html.viewer-open, html.viewer-open body { overflow: hidden; }
+.viewer { position: fixed; inset: 0; z-index: 10; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--bg); outline: none; }
+.v-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line);
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) max(20px, env(safe-area-inset-right, 0px)) 8px max(20px, env(safe-area-inset-left, 0px));
+}
+.v-title { display: grid; min-width: 0; text-align: left; }
+.v-name { font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v-dims { font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
+.v-done { flex: none; min-height: 44px; padding: 0 0 0 12px; border: 0; background: none; font: 500 var(--t-body) var(--font); }
+.v-stage { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 40%, var(--stage-hi), var(--stage) 80%); }
+#gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#gl:active { cursor: grabbing; }
+#gl.measuring { cursor: crosshair; }
+.v-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#mHalo { stroke: #fff; stroke-width: 5; stroke-linecap: round; }
+#mLine { stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; }
+.v-marks circle { fill: var(--ink); stroke: #fff; stroke-width: 2.5; }
+.v-msg { position: absolute; inset: 40% 20px auto; margin: 0; text-align: center; font-size: var(--t-sm); color: var(--muted); }
+.v-bottom {
+  display: grid; gap: 12px; border-top: 1px solid var(--line);
+  padding: 14px max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 12px) max(20px, env(safe-area-inset-left, 0px));
+}
+.v-bottom > * { width: 100%; max-width: 460px; justify-self: center; }
+.v-panel { display: grid; gap: 10px; min-height: 94px; align-content: center; }
+.v-panel .seg-sm { margin-top: 0; }
+.seg.seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg.seg4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.v-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.v-views button { min-height: 40px; padding: 0 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--t-sm); }
+.v-panel input[type="range"] { width: 100%; height: 36px; margin: 0; accent-color: var(--solid); }
+.v-panel input[type="range"]:disabled { opacity: .35; }
+.v-measure { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+.v-read { margin: 0; text-align: left; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
+.v-read.has { font-size: var(--t-fig); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); }
+.v-read small { margin-left: 4px; font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
+.v-tabs button { min-height: 44px; }
+.v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
@@ -209,7 +256,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .stl .stage { order: -1; padding: 0; }
   .stl-figs .fig + .fig { border-left: 0; }
   /* the preview gives up height first, so name, volume and the button always fit in the window */
-  #view { width: min(100%, clamp(150px, calc(100vh - 390px), 460px)); height: auto; aspect-ratio: 1 / 1; border-radius: 24px; }
+  .thumb { width: min(100%, clamp(150px, calc(100vh - 390px), 460px)); height: auto; aspect-ratio: 1 / 1; }
+  #view { border-radius: 24px; }
   .stl .btn { justify-self: center; width: min(100%, 360px); }
   .side .sec:first-child { padding-top: 32px; }
   .side .sec { gap: 26px; padding-block: 36px; }
@@ -225,6 +273,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .fold > summary:hover::after { color: var(--ink); }
   .rates:hover { opacity: .7; }
   .more > summary:hover { text-decoration-color: var(--ink); }
+  .v-tabs button[aria-selected="true"]:hover { background: var(--solid); }
+  .v-views button:hover { border-color: var(--frame); }
+  .v-clear:hover, .v-done:hover { color: var(--ink); }
+  .expand:hover svg { background: #fff; }
 }
 </style>
 </head>
@@ -244,7 +296,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <span class="piece-meta"><span id="dims">—</span><span id="exTag">, example</span></span>
     </div>
     <div class="figs stl-figs">
-      <div class="fig stage"><canvas id="view" aria-label="3D preview. Drag sideways to rotate."></canvas></div>
+      <div class="fig stage">
+        <div class="thumb">
+          <canvas id="view" aria-label="3D preview. Tap to inspect full screen, drag sideways to rotate."></canvas>
+          <button type="button" class="expand" id="expand" aria-label="Inspect full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5"/></svg></button>
+        </div>
+      </div>
       <div class="fig volfig"><b id="vol">—</b><span id="volSub">volume</span></div>
     </div>
     <p class="warn" id="meshWarn" hidden></p>
@@ -335,6 +392,50 @@ button { font: inherit; color: inherit; cursor: pointer; }
   </footer>
   </div>
 </main>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="3D viewer" tabindex="-1" hidden>
+  <div class="v-top">
+    <div class="v-title"><span class="v-name" id="vName"></span><span class="v-dims" id="vDims"></span></div>
+    <button type="button" class="v-done" id="vDone">Done</button>
+  </div>
+  <div class="v-stage">
+    <canvas id="gl" aria-label="3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset."></canvas>
+    <svg class="v-marks" aria-hidden="true"><line id="mHalo"/><line id="mLine"/><circle id="mA" r="5"/><circle id="mB" r="5"/></svg>
+    <p class="v-msg" id="vMsg" hidden></p>
+  </div>
+  <div class="v-bottom">
+    <div class="v-panel" id="pView" role="tabpanel">
+      <div class="v-views" id="vViews">
+        <button type="button" data-view="front">Front</button>
+        <button type="button" data-view="side">Side</button>
+        <button type="button" data-view="top">Top</button>
+        <button type="button" data-view="home">Reset</button>
+      </div>
+      <div class="seg seg-sm seg2" id="vFinish" role="radiogroup" aria-label="Finish">
+        <button type="button" role="radio" data-f="gold">Gold</button>
+        <button type="button" role="radio" data-f="clay">Clay</button>
+      </div>
+    </div>
+    <div class="v-panel" id="pSection" role="tabpanel" hidden>
+      <div class="seg seg-sm seg4" id="vAxis" role="radiogroup" aria-label="Cut direction">
+        <button type="button" role="radio" data-a="-1">Off</button>
+        <button type="button" role="radio" data-a="0">Width</button>
+        <button type="button" role="radio" data-a="1">Depth</button>
+        <button type="button" role="radio" data-a="2">Height</button>
+      </div>
+      <input type="range" id="vCut" min="10" max="990" value="500" aria-label="Cut position" disabled>
+    </div>
+    <div class="v-panel v-measure" id="pMeasure" role="tabpanel" hidden>
+      <p class="v-read" id="vRead" aria-live="polite">Tap two points on the piece</p>
+      <button type="button" class="v-clear" id="vClear" hidden>Clear</button>
+    </div>
+    <div class="seg v-tabs" id="vTabs" role="tablist" aria-label="Tools">
+      <button type="button" role="tab" data-tab="View" aria-selected="true">View</button>
+      <button type="button" role="tab" data-tab="Section" aria-selected="false">Section</button>
+      <button type="button" role="tab" data-tab="Measure" aria-selected="false">Measure</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // @pure-start
@@ -449,6 +550,82 @@ function ringBand(inner = 17, width = 3, thick = 1.6, seg = 128) {
     quad(i0b, i1b, o1b, o0b);
   }
   return Float32Array.from(out);
+}
+
+// Nearest surface point along a ray (Möller–Trumbore against every triangle), in file coordinates.
+// clip = { axis: 0|1|2, value, sign }: points with sign × (p[axis] − value) > 0 are cut away.
+// Looking into a cut, the first surface left is the inside of a wall (a back face), so the point
+// lands on the cut plane itself; tapping both edges of a cut wall then measures its thickness.
+// flip: the file's triangles wind inward (negative signed volume).
+function pickPoint(pos, o, d, clip, flip) {
+  const ox = o[0], oy = o[1], oz = o[2], dx = d[0], dy = d[1], dz = d[2];
+  let best = Infinity, back = false;
+  for (let i = 0; i < pos.length; i += 9) {
+    const ax = pos[i], ay = pos[i + 1], az = pos[i + 2];
+    const e1x = pos[i + 3] - ax, e1y = pos[i + 4] - ay, e1z = pos[i + 5] - az;
+    const e2x = pos[i + 6] - ax, e2y = pos[i + 7] - ay, e2z = pos[i + 8] - az;
+    const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
+    const det = e1x * px + e1y * py + e1z * pz;
+    if (det === 0) continue;
+    const inv = 1 / det;
+    const tx = ox - ax, ty = oy - ay, tz = oz - az;
+    const u = (tx * px + ty * py + tz * pz) * inv;
+    if (u < 0 || u > 1) continue;
+    const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x;
+    const v = (dx * qx + dy * qy + dz * qz) * inv;
+    if (v < 0 || u + v > 1) continue;
+    const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+    if (t <= 0 || t >= best) continue;
+    if (clip) {
+      const c = clip.axis === 0 ? ox + dx * t : clip.axis === 1 ? oy + dy * t : oz + dz * t;
+      if (clip.sign * (c - clip.value) > 0) continue;
+    }
+    best = t;
+    back = flip ? det > 0 : det < 0; // det = −d · (e1 × e2)
+  }
+  if (best === Infinity) return null;
+  if (clip && back && d[clip.axis] !== 0) {
+    const tp = (clip.value - o[clip.axis]) / d[clip.axis];
+    if (tp > 0 && tp < best) best = tp;
+  }
+  return [ox + dx * best, oy + dy * best, oz + dz * best];
+}
+
+// Viewer orientation as a unit quaternion [w, x, y, z], so the piece can turn freely in every direction.
+function qAxis(ax, ay, az, angle) {
+  const len = Math.hypot(ax, ay, az);
+  if (!len || !angle) return [1, 0, 0, 0];
+  const s = Math.sin(angle / 2) / len;
+  return [Math.cos(angle / 2), ax * s, ay * s, az * s];
+}
+function qMul(a, b) {
+  return [
+    a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+    a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+    a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1],
+    a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0],
+  ];
+}
+function qNorm(q) {
+  const len = Math.hypot(q[0], q[1], q[2], q[3]);
+  return len && isFinite(len) ? q.map((v) => v / len) : [1, 0, 0, 0];
+}
+function qSlerp(a, b, t) {
+  let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  if (d < 0) { b = b.map((v) => -v); d = -d; }
+  if (d > 0.9995) return qNorm(a.map((v, i) => v + (b[i] - v) * t));
+  const th = Math.acos(d), s = Math.sin(th), ka = Math.sin((1 - t) * th) / s, kb = Math.sin(t * th) / s;
+  return a.map((v, i) => v * ka + b[i] * kb);
+}
+// File → view rotation, row-major: the file's Z-up turned to the screen's Y-up, then the orientation q.
+function viewMatrix(q) {
+  const [w, x, y, z] = q;
+  const r = [
+    1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y),
+    2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x),
+    2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y),
+  ];
+  return [r[0], -r[2], r[1], r[3], -r[5], r[4], r[6], -r[8], r[7]];
 }
 
 const round2 = (v) => Math.round(v * 100) / 100;
@@ -688,21 +865,452 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
     }
   }
 
-  let drag = null;
+  // A drag rotates the thumbnail; a tap opens the full-screen viewer.
+  let drag = null, dragMoved = 0;
   cv.addEventListener("pointerdown", (e) => {
-    drag = { x: e.clientX, y: e.clientY, yaw: view.yaw, pitch: view.pitch };
+    drag = { x: e.clientX, y: e.clientY, yaw: view.yaw, pitch: view.pitch, moved: 0 };
     try { cv.setPointerCapture(e.pointerId); } catch {}
   });
   cv.addEventListener("pointermove", (e) => {
     if (!drag) return;
+    drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.x, e.clientY - drag.y));
     view.yaw = drag.yaw + (e.clientX - drag.x) * 0.025;
     view.pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.025));
     schedule();
   });
-  const endDrag = () => { drag = null; };
+  const endDrag = () => { if (drag) dragMoved = drag.moved; drag = null; };
   cv.addEventListener("pointerup", endDrag);
   cv.addEventListener("pointercancel", endDrag);
-  window.addEventListener("resize", schedule);
+  cv.addEventListener("click", () => {
+    const moved = drag ? drag.moved : dragMoved;
+    drag = null;
+    if (moved < 8) openViewer();
+  });
+  $("expand").addEventListener("click", () => openViewer());
+  window.addEventListener("resize", () => { schedule(); if (V.open) vSchedule(); });
+
+  // ---------- full-screen viewer ----------
+  // Every triangle of the file, drawn with WebGL, so a piece can be checked before it's printed and cast.
+  // Orthographic like the thumbnail: Front, Side and Top are true elevations, and zooming in never clips.
+  // The inside of a cut (back faces) is drawn flat charcoal, so a section reads as a solid face.
+  const viewer = $("viewer"), glc = $("gl");
+  const reduceMotion = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Same default angle as the thumbnail; Front looks from the file's −Y side with Z up, Top looks down Z.
+  const HOME = { q: qMul(qAxis(1, 0, 0, 0.62), qAxis(0, 1, 0, -0.6)), zoom: 1, panX: 0, panY: 0 };
+  const VIEWS = {
+    home: HOME,
+    front: { q: [1, 0, 0, 0], zoom: 1, panX: 0, panY: 0 },
+    side: { q: qAxis(0, 1, 0, -Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
+    top: { q: qAxis(1, 0, 0, Math.PI / 2), zoom: 1, panX: 0, panY: 0 },
+  };
+  const FINISH = {
+    gold: { gold: 1, base: [0, 0, 0], spec: [0.14, 0.12, 0.07], shine: 40 }, // colours come from the thumbnail's palette
+    clay: { gold: 0, base: [0.8, 0.79, 0.77], spec: [0.16, 0.16, 0.16], shine: 20 },
+  };
+  const V = {
+    ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null, count: 0, rad: 1, flip: false,
+    anim: null, raf: 0, viewFor: null, tab: "View", cut: null, pts: [], miss: false,
+    finish: store.get("gq.finish") === "clay" ? "clay" : "gold",
+  };
+
+  const VS = `
+attribute vec3 aPos;
+attribute vec3 aNrm;
+uniform vec3 uCenter;
+uniform mat3 uRot;
+uniform vec2 uScale;
+uniform vec2 uPan;
+uniform float uDepth;
+uniform vec4 uClip;
+varying vec3 vNrm;
+varying float vCut;
+void main() {
+  vec3 q = aPos - uCenter;
+  vec3 p = uRot * q;
+  vNrm = uRot * aNrm;
+  vCut = dot(q, uClip.xyz) - uClip.w;
+  gl_Position = vec4(p.xy * uScale + uPan, -p.z * uDepth, 1.0);
+}`;
+  const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec3 uBase;
+uniform vec3 uSpec;
+uniform float uShine;
+uniform float uGold;
+uniform vec3 uCap;
+varying vec3 vNrm;
+varying float vCut;
+void main() {
+  if (vCut > 0.0) discard;
+  if (!gl_FrontFacing) { gl_FragColor = vec4(uCap, 1.0); return; }
+  vec3 n = normalize(vNrm);
+  vec3 key = normalize(vec3(-0.35, 0.62, 0.7));
+  vec3 fill = normalize(vec3(0.6, -0.25, 0.5));
+  float d = max(dot(n, key), 0.0);
+  float f = max(dot(n, fill), 0.0);
+  float sky = 0.5 + 0.5 * n.y;
+  float s = pow(max(dot(n, normalize(key + vec3(0.0, 0.0, 1.0))), 0.0), uShine);
+  float rim = 1.0 - max(n.z, 0.0);
+  float k = min(0.22 + 0.78 * d + 0.25 * rim * rim, 1.0);
+  vec3 gold = min((vec3(70.0, 46.0, 12.0) + vec3(185.0, 150.0, 70.0) * k + vec3(40.0, 40.0, 60.0) * (k * k * k)) / 255.0, 1.0);
+  vec3 c = mix(uBase * (0.28 + 0.08 * sky + 0.55 * d + 0.12 * f), gold, uGold) + uSpec * s;
+  gl_FragColor = vec4(c / max(1.0, max(c.r, max(c.g, c.b))), 1.0); // a highlight dims rather than clips, so the hue holds
+}`;
+
+  function glSetup() {
+    let gl = null;
+    try { gl = glc.getContext("webgl", { antialias: true, alpha: true, depth: true }) || glc.getContext("experimental-webgl"); } catch {}
+    if (!gl) return false;
+    try {
+      const shader = (type, src) => {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
+        return s;
+      };
+      const p = gl.createProgram();
+      gl.attachShader(p, shader(gl.VERTEX_SHADER, VS));
+      gl.attachShader(p, shader(gl.FRAGMENT_SHADER, FS));
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
+      gl.useProgram(p);
+      V.loc = { aPos: gl.getAttribLocation(p, "aPos"), aNrm: gl.getAttribLocation(p, "aNrm") };
+      ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uBase", "uSpec", "uShine", "uGold", "uCap"].forEach((n) => (V.loc[n] = gl.getUniformLocation(p, n)));
+    } catch { return false; }
+    gl.enable(gl.DEPTH_TEST);
+    gl.clearColor(0, 0, 0, 0);
+    gl.uniform3f(V.loc.uCap, 0.231, 0.224, 0.212); // --solid
+    V.gl = gl; V.built = null; V.pbuf = V.nbuf = null;
+    return true;
+  }
+
+  // The file's own vertices go to the GPU as they are; flat normals (one per triangle) show facets honestly.
+  function glUpload() {
+    const gl = V.gl, pos = mesh.pos, n = pos.length / 9, [cx, cy, cz] = mesh.stats.center;
+    const flip = mesh.stats.signedVolume < 0, nrm = new Int8Array(n * 12);
+    let rad = 0;
+    for (let i = 0; i < n; i++) {
+      const b = i * 9;
+      const e1x = pos[b + 3] - pos[b], e1y = pos[b + 4] - pos[b + 1], e1z = pos[b + 5] - pos[b + 2];
+      const e2x = pos[b + 6] - pos[b], e2y = pos[b + 7] - pos[b + 1], e2z = pos[b + 8] - pos[b + 2];
+      const nx = e1y * e2z - e1z * e2y, ny = e1z * e2x - e1x * e2z, nz = e1x * e2y - e1y * e2x;
+      const k = (flip ? -127 : 127) / (Math.sqrt(nx * nx + ny * ny + nz * nz) || 1);
+      for (let v = 0, o = i * 12; v < 3; v++, o += 4) {
+        nrm[o] = Math.round(nx * k); nrm[o + 1] = Math.round(ny * k); nrm[o + 2] = Math.round(nz * k);
+        const x = pos[b + v * 3] - cx, y = pos[b + v * 3 + 1] - cy, z = pos[b + v * 3 + 2] - cz;
+        const d = x * x + y * y + z * z;
+        if (d > rad) rad = d;
+      }
+    }
+    V.pbuf = V.pbuf || gl.createBuffer();
+    V.nbuf = V.nbuf || gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, V.pbuf);
+    gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(V.loc.aPos);
+    gl.vertexAttribPointer(V.loc.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, V.nbuf);
+    gl.bufferData(gl.ARRAY_BUFFER, nrm, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(V.loc.aNrm);
+    gl.vertexAttribPointer(V.loc.aNrm, 3, gl.BYTE, true, 4, 0);
+    V.built = mesh; V.count = n * 3; V.rad = Math.sqrt(rad) || 1; V.flip = flip;
+  }
+
+  // File → view rotation (row-major) and s = CSS px per file unit.
+  function vCamera(W, H) {
+    return { m: viewMatrix(V.q), s: (0.44 * Math.min(W, H) * V.zoom) / V.rad };
+  }
+  function cutPlane() {
+    if (!V.cut || !mesh) return null;
+    // Sliding right always cuts deeper, from her side of the piece towards the far side.
+    const a = V.cut.axis, st = mesh.stats, sign = V.cut.sign;
+    return { axis: a, sign, value: st.center[a] + sign * st.size[a] * (0.5 - V.cut.t) };
+  }
+  function vSchedule() { if (!V.raf) V.raf = requestAnimationFrame(vDraw); }
+  function vDraw() {
+    V.raf = 0;
+    if (!V.open || !V.gl || V.lost || !mesh) return;
+    if (V.anim) V.anim(performance.now());
+    const gl = V.gl, L = V.loc;
+    if (V.built !== mesh) glUpload();
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const W = glc.clientWidth, H = glc.clientHeight;
+    if (!W || !H) return;
+    const pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (glc.width !== pw || glc.height !== ph) { glc.width = pw; glc.height = ph; }
+    gl.viewport(0, 0, pw, ph);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const { m, s } = vCamera(W, H), c = mesh.stats.center;
+    gl.uniform3f(L.uCenter, c[0], c[1], c[2]);
+    gl.uniformMatrix3fv(L.uRot, false, [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]]);
+    gl.uniform2f(L.uScale, (s * 2) / W, (s * 2) / H);
+    gl.uniform2f(L.uPan, (V.panX * 2) / W, (-V.panY * 2) / H);
+    gl.uniform1f(L.uDepth, 1 / (V.rad * 1.01));
+    const cut = cutPlane();
+    if (cut) {
+      const a = [0, 0, 0];
+      a[cut.axis] = cut.sign;
+      gl.uniform4f(L.uClip, a[0], a[1], a[2], cut.sign * (cut.value - c[cut.axis]));
+    } else gl.uniform4f(L.uClip, 0, 0, 0, 1);
+    const f = FINISH[V.finish];
+    gl.uniform3fv(L.uBase, f.base);
+    gl.uniform3fv(L.uSpec, f.spec);
+    gl.uniform1f(L.uShine, f.shine);
+    gl.uniform1f(L.uGold, f.gold);
+    gl.frontFace(V.flip ? gl.CW : gl.CCW);
+    gl.drawArrays(gl.TRIANGLES, 0, V.count);
+    vMarks(m, s, W, H);
+    if (V.anim) vSchedule();
+  }
+
+  // Measure dots and line, re-projected every frame so they stay on the model.
+  const marks = ["mA", "mB", "mLine", "mHalo"].map($);
+  function vMarks(m, s, W, H) {
+    const c = mesh.stats.center;
+    const xy = (V.tab === "Measure" ? V.pts : []).map((p) => {
+      const dx = p[0] - c[0], dy = p[1] - c[1], dz = p[2] - c[2];
+      return [W / 2 + V.panX + (m[0] * dx + m[1] * dy + m[2] * dz) * s, H / 2 + V.panY - (m[3] * dx + m[4] * dy + m[5] * dz) * s];
+    });
+    marks.forEach((el, i) => {
+      const on = i < 2 ? !!xy[i] : xy.length === 2;
+      el.style.display = on ? "" : "none";
+      if (!on) return;
+      if (i < 2) { el.setAttribute("cx", xy[i][0]); el.setAttribute("cy", xy[i][1]); }
+      else { el.setAttribute("x1", xy[0][0]); el.setAttribute("y1", xy[0][1]); el.setAttribute("x2", xy[1][0]); el.setAttribute("y2", xy[1][1]); }
+    });
+  }
+
+  // Glide to a view: the orientation turns the short way round (slerp), zoom and pan ease alongside.
+  function animateTo(to) {
+    if (![V.zoom, V.panX, V.panY, ...V.q].every(Number.isFinite)) Object.assign(V, HOME);
+    const from = { q: V.q, zoom: V.zoom, panX: V.panX, panY: V.panY };
+    if (V.cut) V.cut.sign = cutSign(to.q, V.cut.axis); // a new view keeps the cut open towards her
+    if (reduceMotion) { Object.assign(V, to); V.anim = null; vSchedule(); return; }
+    const t0 = performance.now();
+    V.anim = (now) => {
+      const k = Math.min(1, (now - t0) / 260), e = 1 - Math.pow(1 - k, 3);
+      V.q = k >= 1 ? to.q : qSlerp(from.q, to.q, e);
+      for (const key of ["zoom", "panX", "panY"]) V[key] = from[key] + (to[key] - from[key]) * e;
+      if (k >= 1) V.anim = null;
+    };
+    vSchedule();
+  }
+  // Turn the piece by `angle` about a view-space axis (x right, y up, z toward her), pivoting on file point `pv`:
+  // the pan is moved so `pv` stays where it is on screen.
+  function turn(ax, ay, az, angle, pv) {
+    if (!angle) return;
+    if (!pv) { V.q = qNorm(qMul(qAxis(ax, ay, az, angle), V.q)); return; }
+    const c = mesh.stats.center, d = [pv[0] - c[0], pv[1] - c[1], pv[2] - c[2]], s = vCamera(glc.clientWidth, glc.clientHeight).s;
+    const at = (m) => [(m[0] * d[0] + m[1] * d[1] + m[2] * d[2]) * s, (m[3] * d[0] + m[4] * d[1] + m[5] * d[2]) * s];
+    const [x0, y0] = at(viewMatrix(V.q));
+    V.q = qNorm(qMul(qAxis(ax, ay, az, angle), V.q));
+    const [x1, y1] = at(viewMatrix(V.q));
+    V.panX += x0 - x1;
+    V.panY -= y0 - y1;
+  }
+  // Once she has zoomed or moved off the middle, a drag turns the piece about the spot in the middle of the screen,
+  // so the detail she's looking at stays in view. Centred, it turns about the middle of the piece.
+  let pivot;
+  function findPivot() {
+    if (!V.panX && !V.panY) return null;
+    const hit = pickAt(glc.clientWidth / 2, glc.clientHeight / 2);
+    return hit.p || hit.onRay;
+  }
+  // Zoom by f, keeping the model point under (px, py) in place.
+  function zoomAt(px, py, f) {
+    if (!Number.isFinite(f) || f <= 0) return;
+    const z = Math.max(0.3, Math.min(80, V.zoom * f));
+    f = z / V.zoom;
+    V.zoom = z;
+    const cx = px - glc.clientWidth / 2, cy = py - glc.clientHeight / 2;
+    V.panX = cx - (cx - V.panX) * f;
+    V.panY = cy - (cy - V.panY) * f;
+  }
+
+  // The point on the piece under canvas point (x, y), in file units, or null.
+  // `onRay` is the point on that line level with the middle of the piece, for when it misses.
+  function pickAt(x, y) {
+    const W = glc.clientWidth, H = glc.clientHeight, { m, s } = vCamera(W, H), c = mesh.stats.center;
+    const vx = (x - W / 2 - V.panX) / s, vy = -(y - H / 2 - V.panY) / s, vz = V.rad * 1.05;
+    const o = [0, 1, 2].map((i) => c[i] + m[i] * vx + m[3 + i] * vy + m[6 + i] * vz);
+    const onRay = [0, 1, 2].map((i) => c[i] + m[i] * vx + m[3 + i] * vy);
+    return { p: pickPoint(mesh.pos, o, [-m[6], -m[7], -m[8]], cutPlane(), V.flip), onRay };
+  }
+  function measureAt(clientX, clientY) {
+    const r = glc.getBoundingClientRect(), { p } = pickAt(clientX - r.left, clientY - r.top);
+    V.miss = !p;
+    if (p) V.pts = V.pts.length === 1 ? [V.pts[0], p] : [p];
+    showReading();
+    vSchedule();
+  }
+  function showReading() {
+    const el = $("vRead"), n = V.pts.length;
+    $("vClear").hidden = !n;
+    el.classList.toggle("has", n === 2);
+    if (n === 2) {
+      const [a, b] = V.pts;
+      el.innerHTML = fig(fmt2.format(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) * UNIT_TO_MM[settings.unit]), "mm");
+    } else el.textContent = V.miss ? "That missed the piece. Tap on the model." : n ? "Tap the second point" : "Tap two points on the piece";
+  }
+
+  // Gestures: one finger turns the piece freely in any direction (a trackball), two fingers pinch, pan and twist,
+  // a double-tap resets. Mouse: drag turns, wheel zooms, right-drag or shift-drag pans.
+  const touches = new Map();
+  let tap = null, lastTap = null;
+  glc.addEventListener("pointerdown", (e) => {
+    try { glc.setPointerCapture(e.pointerId); } catch {}
+    V.anim = null;
+    pivot = undefined;
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    tap = touches.size === 1 ? { x: e.clientX, y: e.clientY, t: performance.now(), pan: e.button === 1 || e.button === 2 || e.shiftKey } : null;
+  });
+  glc.addEventListener("pointermove", (e) => {
+    const p = touches.get(e.pointerId);
+    if (!p) return;
+    if (touches.size === 1) {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      if (tap && tap.pan) { V.panX += dx; V.panY += dy; }
+      else {
+        if (pivot === undefined) pivot = findPivot();
+        turn(dy, dx, 0, Math.hypot(dx, dy) * 0.01, pivot); // screen y points down, so dragging down tips the front down
+      }
+    } else {
+      const [a, b] = [...touches.values()];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const d0 = Math.hypot(a.x - b.x, a.y - b.y), a0 = Math.atan2(b.y - a.y, b.x - a.x);
+      p.x = e.clientX; p.y = e.clientY;
+      const d1 = Math.hypot(a.x - b.x, a.y - b.y), a1 = Math.atan2(b.y - a.y, b.x - a.x);
+      const r = glc.getBoundingClientRect();
+      pivot = undefined;
+      if (d0 > 0 && d1 > 0) zoomAt(mx - r.left, my - r.top, d1 / d0);
+      // Twist: roll the piece with the fingers, around the point between them. Fingers almost touching give no reliable angle.
+      const tw = Math.min(d0, d1) > 30 ? Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0)) : 0;
+      if (tw) {
+        turn(0, 0, 1, -tw);
+        const cx = mx - r.left - r.width / 2, cy = my - r.top - r.height / 2, vx = V.panX - cx, vy = V.panY - cy;
+        V.panX = cx + vx * Math.cos(tw) - vy * Math.sin(tw);
+        V.panY = cy + vx * Math.sin(tw) + vy * Math.cos(tw);
+      }
+      V.panX += (a.x + b.x) / 2 - mx;
+      V.panY += (a.y + b.y) / 2 - my;
+    }
+    p.x = e.clientX; p.y = e.clientY;
+    vSchedule();
+  });
+  const lift = (e) => {
+    if (!touches.delete(e.pointerId)) return;
+    const t = tap;
+    if (e.type !== "pointerup" || !t || t.pan || touches.size) return;
+    tap = null;
+    if (Math.hypot(e.clientX - t.x, e.clientY - t.y) > 8 || performance.now() - t.t > 500) return;
+    if (V.tab === "Measure") return measureAt(e.clientX, e.clientY);
+    const now = performance.now();
+    if (lastTap && now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { lastTap = null; animateTo(HOME); }
+    else lastTap = { x: e.clientX, y: e.clientY, t: now };
+  };
+  glc.addEventListener("pointerup", lift);
+  glc.addEventListener("pointercancel", lift);
+  glc.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    V.anim = null;
+    const r = glc.getBoundingClientRect(), k = e.deltaMode === 1 ? 16 : 1;
+    zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * k * (e.ctrlKey ? 0.01 : 0.0015)));
+    vSchedule();
+  }, { passive: false });
+  glc.addEventListener("contextmenu", (e) => e.preventDefault());
+  ["gesturestart", "gesturechange"].forEach((t) => viewer.addEventListener(t, (e) => e.preventDefault()));
+  glc.addEventListener("webglcontextlost", (e) => { e.preventDefault(); V.lost = true; });
+  glc.addEventListener("webglcontextrestored", () => { V.lost = false; glSetup(); vSchedule(); });
+
+  // Tools
+  function setTab(name) {
+    V.tab = name;
+    document.querySelectorAll("#vTabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    ["View", "Section", "Measure"].forEach((t) => ($("p" + t).hidden = t !== name));
+    glc.classList.toggle("measuring", name === "Measure");
+    showReading();
+    vSchedule();
+  }
+  function setFinish(f) {
+    V.finish = f;
+    document.querySelectorAll("#vFinish button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.f === f)));
+    vSchedule();
+  }
+  // A cut removes the half of the piece facing the camera, so the cut face is in view.
+  // Row 2 of the view matrix is the file-space direction to the camera.
+  const cutSign = (q, axis) => (viewMatrix(q)[6 + axis] >= 0 ? 1 : -1);
+  function setCut(axis) {
+    if (axis < 0 || !mesh) V.cut = null;
+    else {
+      V.cut = { axis, sign: cutSign(V.q, axis), t: 0.5 };
+    }
+    document.querySelectorAll("#vAxis button").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.a === (V.cut ? V.cut.axis : -1))));
+    const slider = $("vCut");
+    slider.disabled = !V.cut;
+    slider.value = 500;
+    vSchedule();
+  }
+  $("vTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); });
+  $("vViews").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) animateTo(VIEWS[b.dataset.view]); });
+  $("vFinish").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-f]");
+    if (b) { setFinish(b.dataset.f); store.set("gq.finish", V.finish); }
+  });
+  $("vAxis").addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b) setCut(+b.dataset.a); });
+  $("vCut").addEventListener("input", (e) => { if (V.cut) { V.cut.t = e.target.value / 1000; vSchedule(); } });
+  $("vClear").addEventListener("click", () => { V.pts = []; V.miss = false; showReading(); vSchedule(); });
+  setFinish(V.finish);
+
+  // Open and close. Back (or the iOS edge swipe) closes it too.
+  function resetViewer() {
+    Object.assign(V, HOME);
+    V.anim = null; V.pts = []; V.miss = false; V.viewFor = mesh;
+    setCut(-1);
+  }
+  function openViewer() {
+    if (!mesh || V.open) return;
+    V.open = true;
+    viewer.hidden = false;
+    document.documentElement.classList.add("viewer-open");
+    document.querySelector("main").inert = true;
+    $("vName").textContent = mesh.name;
+    $("vDims").textContent = $("dims").textContent;
+    if (V.viewFor !== mesh) resetViewer();
+    const ok = !!V.gl || glSetup();
+    $("vMsg").hidden = ok;
+    $("vMsg").textContent = ok ? "" : "This browser can't show the 3D viewer.";
+    setTab(V.tab);
+    try { history.pushState({ gqViewer: 1 }, ""); } catch {}
+    viewer.focus({ preventScroll: true });
+    vSchedule();
+  }
+  function closeViewer() {
+    if (!V.open) return;
+    V.open = false;
+    V.anim = null;
+    viewer.hidden = true;
+    document.documentElement.classList.remove("viewer-open");
+    document.querySelector("main").inert = false;
+    $("expand").focus({ preventScroll: true });
+  }
+  const leaveViewer = () => { if (history.state && history.state.gqViewer) history.back(); else closeViewer(); };
+  $("vDone").addEventListener("click", leaveViewer);
+  window.addEventListener("popstate", () => closeViewer());
+  document.addEventListener("keydown", (e) => { if (V.open && e.key === "Escape") leaveViewer(); });
+  // A new file while the viewer is open (dropped on a laptop): show it from the start.
+  function viewerMeshChanged() {
+    if (!V.open) return;
+    if (!mesh) return leaveViewer();
+    $("vName").textContent = mesh.name;
+    $("vDims").textContent = $("dims").textContent;
+    resetViewer();
+    showReading();
+    vSchedule();
+  }
 
   // ---------- mesh loading ----------
   function loadMesh(pos, name, example) {
@@ -711,6 +1319,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
     $("fname").textContent = name;
     setPreview(pos, st);
     render();
+    viewerMeshChanged();
     setTimeout(() => {
       if (!mesh || mesh.pos !== pos || st.tris > 2000000) return;
       mesh.edges = edgeCheck(pos);
@@ -732,6 +1341,7 @@ function quote({ volumeCm3, karat, density, premiumPct = 0, printPct, vatPct, go
       view.n = 0; schedule();
       $("fname").textContent = file.name;
       render();
+      viewerMeshChanged();
       showWarn("Couldn't read this file. " + (err && err.message ? err.message : "") + " Export it as STL and try again.");
     }
   }
