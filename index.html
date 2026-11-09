@@ -966,11 +966,11 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   // so the lower the karat the more copper per gram of gold and the pinker it gets (18K is peachy).
   // White is rhodium-plated, as white gold is sold, so it looks the same at every karat; it has no colour of
   // its own to carry it, so it gets more light to read as bright rhodium, not steel.
-  const RHODIUM = [0.9, 0.9, 0.92, 1.4];
+  const RHODIUM = [0.9, 0.9, 0.92, 1.6];
   const FINISH = {
     white: { 9: RHODIUM, 14: RHODIUM, 18: RHODIUM },
-    rose: { 9: [0.97, 0.63, 0.49, 1.15], 14: [0.98, 0.67, 0.5, 1.15], 18: [1.0, 0.7, 0.46, 1.15] },
-    yellow: { 9: [0.98, 0.74, 0.36, 1.05], 14: [1.0, 0.7, 0.22, 1.0], 18: [1.0, 0.68, 0.15, 1.0] },
+    rose: { 9: [0.97, 0.63, 0.46, 1.4], 14: [0.98, 0.67, 0.46, 1.4], 18: [1.0, 0.71, 0.44, 1.4] },
+    yellow: { 9: [1.0, 0.81, 0.52, 1.5], 14: [1.0, 0.775, 0.38, 1.5], 18: [1.0, 0.74, 0.25, 1.5] }, // fitted to a photo of real 9ct and 18ct bands
   };
   const V = {
     ...HOME, open: false, gl: null, lost: false, loc: null, pbuf: null, nbuf: null, built: null,
@@ -1010,9 +1010,9 @@ varying float vCut;
 // (the stripe that makes polish read as polish), a bright ceiling, a big softbox upper left, a strip light on the
 // right and a white card around the lens. r is a view-space direction (x right, y up, z towards her).
 float studio(vec3 r) {
-  float c = mix(0.36, 0.42, smoothstep(-0.6, 0.3, r.y));
-  float seam = (r.y + 0.15) / 0.22;
-  c *= 1.0 - 0.93 * exp(-seam * seam);
+  float c = mix(0.3, 0.55, smoothstep(-0.6, 0.3, r.y));
+  float seam = (r.y + 0.15) / 0.28;
+  c *= 1.0 - 0.97 * exp(-seam * seam);
   c += 0.9 * smoothstep(0.5, 0.95, r.y);
   c += 2.4 * smoothstep(0.78, 0.93, dot(r, normalize(vec3(-0.6, 0.55, 0.58))));
   c += 1.5 * smoothstep(0.86, 0.95, dot(r, normalize(vec3(0.85, 0.05, 0.52))));
@@ -1029,11 +1029,12 @@ void main() {
   vec3 f0 = uAlloy.rgb;
   vec3 F = f0 + (1.0 - f0) * pow(1.0 - cv, 5.0);
   float e = studio(r) * uAlloy.a;
-  // Dim reflections are mostly metal seen in metal, so they take the colour twice and go deep and rich.
-  vec3 lin = e * mix(F * F, F, smoothstep(0.2, 1.4, e)) + 0.012 * f0 * f0;
-  float top = max(lin.r, max(lin.g, lin.b));
-  vec3 c = lin / max(1.0, top); // keep the hue in bright areas instead of clipping to cream
-  c = mix(c, vec3(1.0, 0.97, 0.92), 0.55 * smoothstep(1.6, 3.2, top)); // only the hottest highlights go white
+  // Matched to photos of real rings: shadows are metal seen in metal, so they take its colour about three times
+  // over (deep amber in gold); mid-tones about twice; highlights once.
+  vec3 tint = mix(F * F * F, F, smoothstep(0.1, 1.3, e));
+  float v = 2.0 * e / (1.0 + 2.0 * e); // soft shoulder: bright reflections settle near white instead of burning out
+  vec3 c = tint * v + 0.01 * f0 * f0;
+  c = mix(c, vec3(v), 0.3 * smoothstep(0.7, 0.95, v)); // the brightest glints lose some colour, as in a photo
   gl_FragColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
 }`;
 
