@@ -17,6 +17,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap">
+<script>
+// The app's languages: ?lang=he (or ar, ru, es, fr, en), else the browser's first language the app also has,
+// else English. Set before the page draws, so Hebrew and Arabic lay out right to left from the start.
+(function () {
+  var have = ["en", "he", "ar", "ru", "es", "fr"], want = [];
+  try { want.push(new URLSearchParams(location.search).get("lang")); } catch (e) {}
+  want = want.concat(navigator.languages || [navigator.language]);
+  for (var i = 0; i < want.length; i++) {
+    var p = String(want[i] || "").toLowerCase().split(/[-_]/)[0];
+    if (p === "iw") p = "he";
+    if (have.indexOf(p) >= 0) { document.documentElement.lang = p; break; }
+  }
+  if (/^(he|ar)$/.test(document.documentElement.lang)) document.documentElement.dir = "rtl";
+})();
+</script>
 <style>
 /* Layout: one quiet, centered column on white, steps divided by hairlines, no cards. Charcoal only; the one gold thing on the page is the piece. */
 :root {
@@ -72,8 +87,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .wordmark { font-size: 12px; font-weight: 500; line-height: 1.6; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap; }
 .rates {
   display: grid; grid-template-columns: 7px auto; align-items: center; gap: 2px 8px; min-height: 44px; padding: 2px 0 2px 12px;
-  border: 0; background: none; text-align: left; font-size: var(--t-sm); line-height: 1.5; white-space: nowrap;
+  border: 0; background: none; text-align: start; font-size: var(--t-sm); line-height: 1.5; white-space: nowrap;
 }
+[dir="rtl"] .rates { padding: 2px 12px 2px 0; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--control); }
 .dot.live { background: var(--ok); }
 .dot.stale { background: var(--warn); }
@@ -91,7 +107,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   touch-action: pan-y; cursor: grab;
 }
 #view:active { cursor: grabbing; }
-.expand { position: absolute; right: 0; bottom: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
+.expand { position: absolute; inset-inline-end: 0; bottom: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; }
 .expand svg {
   width: 28px; height: 28px; padding: 6px; border-radius: 9px; background: rgba(255, 255, 255, .9);
   fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
@@ -105,9 +121,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fig { display: grid; justify-items: center; align-content: center; gap: 6px; min-width: 0; padding-inline: 8px; }
-.figs .fig + .fig { border-left: 1px solid var(--line); }
+.figs .fig + .fig { border-inline-start: 1px solid var(--line); }
 .fig b { font-size: var(--t-fig); font-weight: 300; letter-spacing: -.02em; line-height: 1; }
-.fig b small { font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 4px; }
+.fig b small { font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); margin-inline-start: 4px; }
 .fig span { font-size: var(--t-sm); line-height: 1.3; color: var(--muted); }
 
 .btn {
@@ -119,7 +135,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: default; }
 .btn:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
 .btn.drag { outline: 1px dashed var(--ink); outline-offset: 4px; }
-.warn { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: var(--t-sm); line-height: 1.45; text-align: left; }
+.warn { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: var(--t-sm); line-height: 1.45; text-align: start; }
 
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--track); border-radius: 14px; }
 .seg button {
@@ -164,27 +180,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .detail dl > .sum { font-weight: 500; }
 .detail dt { min-width: 0; }
 .detail dt small { display: block; margin-top: 2px; font-size: var(--t-cap); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
-.detail dd { margin: 0; text-align: right; white-space: nowrap; }
+.detail dd { margin: 0; text-align: end; white-space: nowrap; }
 
 .set-group { margin-top: 30px; }
 .set-group:first-child { margin-top: 4px; }
 .set-group h3, .det-group h3 { margin: 0 0 6px; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .set-note { margin: -2px 0 4px; font-size: var(--t-cap); color: var(--muted); }
-.set-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 46px; align-items: center; column-gap: 10px; padding-block: 9px; border-bottom: 1px solid var(--line); cursor: text; }
-.set-row:last-of-type { border-bottom: 0; }
+.set-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px var(--unit-w, 46px); align-items: center; column-gap: 10px; padding-block: 9px; border-bottom: 1px solid var(--line); cursor: text; }
+.set-row:last-of-type, .set-row.end { border-bottom: 0; }
 .set-lbl { min-width: 0; font-size: var(--t-body); line-height: 1.3; }
 .set-lbl small { display: block; font-size: var(--t-cap); color: var(--muted); }
 .set-row input {
   width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; background: var(--track);
-  color: var(--ink); font: 400 var(--t-body) var(--font); font-variant-numeric: tabular-nums; text-align: right;
+  color: var(--ink); font: 400 var(--t-body) var(--font); font-variant-numeric: tabular-nums; text-align: end;
 }
 .set-row input:focus { outline: none; border-color: var(--frame); background: var(--bg); }
 .set-row input::placeholder { color: var(--muted); }
 .set-row input.bad { border-color: var(--warn); background: var(--warn-soft); }
 .unit { font-size: var(--t-sm); color: var(--muted); white-space: nowrap; }
+/* Units and file names read in their own direction (like the app's text), so "$/oz" doesn't turn into "oz/$" in Hebrew */
+.unit, .fname { unicode-bidi: plaintext; }
+[dir="rtl"] .unit { text-align: right; } /* still beside the field */
 .field-err { margin: 0 0 8px; font-size: var(--t-cap); line-height: 1.45; color: var(--warn); }
 .seg-sm { margin-top: 10px; padding: 3px; border-radius: 12px; }
 .seg-sm button { min-height: 40px; border-radius: 9px; font-size: var(--t-sm); }
+.seg.seg6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .textbtn {
   display: block; margin: 30px auto 0; min-height: 44px; padding: 0 8px; border: 0; background: none;
   font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line);
@@ -206,10 +226,10 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line);
   padding: calc(env(safe-area-inset-top, 0px) + 6px) max(20px, env(safe-area-inset-right, 0px)) 8px max(20px, env(safe-area-inset-left, 0px));
 }
-.v-title { display: grid; min-width: 0; text-align: left; }
+.v-title { display: grid; min-width: 0; text-align: start; }
 .v-name { font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v-dims { font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
-.v-done { flex: none; min-height: 44px; padding: 0 0 0 12px; border: 0; background: none; font: 500 var(--t-body) var(--font); }
+.v-done { flex: none; min-height: 44px; padding: 0; padding-inline-start: 12px; border: 0; background: none; font: 500 var(--t-body) var(--font); }
 .v-stage { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(circle at 50% 40%, var(--look-hi, var(--stage-hi)), var(--look-lo, var(--stage)) 80%); }
 #gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #gl:active { cursor: grabbing; }
@@ -245,10 +265,11 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 6px 0 14px; box-sizing: border-box;
   border-radius: 12px; background: rgba(255, 255, 255, .9);
 }
+[dir="rtl"] .v-measure { left: auto; right: max(12px, env(safe-area-inset-right, 0px)); padding: 0 14px 0 6px; }
 .v-measure .v-clear { min-height: 40px; }
-.v-read { margin: 0; text-align: left; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
+.v-read { margin: 0; text-align: start; font-size: var(--t-sm); line-height: 1.4; color: var(--muted); }
 .v-read.has { font-size: var(--t-fig); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); }
-.v-read small { margin-left: 4px; font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.v-read small { margin-inline-start: 4px; font-size: var(--t-body); font-weight: 400; letter-spacing: 0; color: var(--muted); }
 .v-clear { min-height: 44px; padding: 0 4px; border: 0; background: none; font: 400 var(--t-sm) var(--font); color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 .v-tabs button { min-height: 44px; }
 .v-tabs button[aria-selected="true"] { background: var(--solid); color: var(--on-ink); }
@@ -266,6 +287,9 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .v-swatches button[aria-checked="true"]::before { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--solid); }
 .v-share { min-height: 50px; width: 100%; }
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
+/* Hebrew and Arabic aren't letter-spaced (it pulls Arabic letters apart), as in the app */
+:is([lang="he"], [lang="ar"]) :is(.wordmark, .btn, .seg button, .set-group h3, .det-group h3) { letter-spacing: 0; }
+[lang="he"] { --unit-w: 64px; } /* "גרם/סמ״ק" is the one unit wider than the usual column */
 
 /* Laptop: piece on the left (stays in view), karat, price and details on the right */
 @media (min-width: 900px) {
@@ -276,11 +300,11 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .wordmark { font-size: 13px; }
   .wordmark br { display: none; }
   .rates { grid-template-columns: 7px auto 7px auto; column-gap: 8px; }
-  #fxTop { padding-right: 22px; }
+  #fxTop { padding-inline-end: 22px; }
   .stl { padding-block: 32px; gap: 18px; border-bottom: 0; }
   .stl-figs { display: contents; }
   .stl .stage { order: -1; padding: 0; }
-  .stl-figs .fig + .fig { border-left: 0; }
+  .stl-figs .fig + .fig { border-inline-start: 0; }
   /* the preview gives up height first, so name, volume and the button always fit in the window */
   .thumb { width: min(100%, clamp(150px, calc(100vh - 390px), 460px)); height: auto; aspect-ratio: 1 / 1; }
   #view { border-radius: 24px; }
@@ -319,8 +343,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 
   <section class="sec stl" id="l-stl" aria-label="STL file">
     <div class="piece-info">
-      <span class="fname" id="fname">Ring band, size 17</span>
-      <span class="piece-meta"><span id="dims">—</span><span id="exTag">, example</span></span>
+      <span class="fname" id="fname"></span>
+      <span class="piece-meta"><span id="dims">—</span><span id="exTag" hidden></span></span>
     </div>
     <div class="figs stl-figs">
       <div class="fig stage">
@@ -353,7 +377,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 
   <section class="sec" aria-label="Price">
     <div class="total-wrap">
-      <div class="total" id="qTotal"><span class="cur">₪</span>—</div>
+      <div class="total" id="qTotal" dir="ltr"><span class="cur">₪</span>—</div>
       <p class="total-sub" id="qUsd"></p>
     </div>
     <p class="fresh" id="qFresh" hidden></p>
@@ -378,9 +402,20 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
     <summary>Pricing settings</summary>
     <div class="fold-body">
       <section class="set-group">
+        <h3>Currency</h3>
+        <div class="seg seg-sm seg6" id="currencies" role="radiogroup" aria-label="Currency">
+          <button type="button" role="radio" data-c="ILS">ILS</button>
+          <button type="button" role="radio" data-c="USD">USD</button>
+          <button type="button" role="radio" data-c="EUR">EUR</button>
+          <button type="button" role="radio" data-c="GBP">GBP</button>
+          <button type="button" role="radio" data-c="CAD">CAD</button>
+          <button type="button" role="radio" data-c="AUD">AUD</button>
+        </div>
+      </section>
+      <section class="set-group">
         <h3>Charges</h3>
         <label class="set-row"><span class="set-lbl">Gold premium</span><input id="sPremium" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
-        <label class="set-row"><span class="set-lbl">Printing fee<small>of gold cost</small></span><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
+        <label class="set-row"><span class="set-lbl"><span>Printing fee</span><small>of gold cost</small></span><input id="sPrint" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
         <label class="set-row"><span class="set-lbl">VAT</span><input id="sVat" type="text" inputmode="decimal" autocomplete="off"><span class="unit">%</span></label>
       </section>
       <section class="set-group">
@@ -397,8 +432,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
       <section class="set-group">
         <h3>Price override</h3>
         <p class="set-note">Leave blank to use live prices.</p>
-        <label class="set-row"><span class="set-lbl">Gold</span><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit">$/oz</span></label>
-        <label class="set-row"><span class="set-lbl">USD → ILS</span><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit">₪</span></label>
+        <label class="set-row" id="rowGold"><span class="set-lbl">Gold</span><input id="sGold" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit">$/oz</span></label>
+        <label class="set-row" id="rowFx"><span class="set-lbl" id="lFx">USD → ILS</span><input id="sFx" type="text" inputmode="decimal" autocomplete="off" placeholder="live"><span class="unit" id="uFx">₪</span></label>
       </section>
       <section class="set-group">
         <h3>STL file units</h3>
@@ -414,7 +449,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   </details>
 
   <footer class="foot">
-    <p>Gold is charged on pure gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.</p>
+    <p id="sources">Gold is charged on pure gold content only: spot from <a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a> plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.</p>
     <p>Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.</p>
   </footer>
   </div>
@@ -482,7 +517,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
         <button type="button" role="radio" data-s="matte">Matte</button>
         <button type="button" role="radio" data-s="gloss">Gloss</button>
       </div>
-      <div class="seg seg-sm" id="sFinish" role="radiogroup" aria-label="Metal">
+      <div class="seg seg-sm" id="sFinish" role="radiogroup" aria-label="Finish">
         <button type="button" role="radio" data-f="white">White</button>
         <button type="button" role="radio" data-f="rose">Rose</button>
         <button type="button" role="radio" data-f="yellow">Yellow</button>
@@ -498,12 +533,54 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 </div>
 
 <script>
+// Translations: the app's ios/GoldQuote/<lang>.lproj/Localizable.strings plus a few website-only strings.
+// The keys are the English text. Generated by tools/web_strings.py; run it again after the app's strings change.
+// @strings-start
+const STRINGS = {
+  he: {"%@ h ago":"לפני %@ שע׳","%@ min ago":"לפני %@ דק׳","%@ must be a number from %@ to %@. Kept %@.":"%@ צריך להיות מספר בין %@ ל־%@. נשאר %@.","%@ must be from %@ to %@, or blank to use the live price.":"%@ צריך להיות בין %@ ל־%@, או ריק כדי להשתמש במחיר החי.","%@ non-manifold edges":"%@ קצוות non-manifold","%@ of %@":"%@ מתוך %@","%@ of gold":"%@ מהזהב","%@ open edges":"%@ קצוות פתוחים","%@ pure × %@/g":"%@ טהור × %@/גרם","%@ under, %@ over, rounded to %@":"%@ מתחת, %@ מעל, מעוגל ל־%@","14K density":"צפיפות 14K","18K density":"צפיפות 18K","3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset.":"דגם תלת־ממדי. גרירה מסובבת אותו לכל כיוון, צביטה מגדילה, סיבוב בשתי אצבעות מטה אותו, והקשה כפולה מאפסת.","3D preview. Tap to inspect full screen, drag sideways to rotate.":"תצוגה תלת־ממדית. הקשה פותחת מסך מלא, גרירה הצידה מסובבת.","3D viewer":"תצוגה תלת־ממדית","9K density":"צפיפות 9K","Alloy density":"צפיפות סגסוגת","Backdrop":"רקע","Black":"שחור","Blue":"כחול","Blush":"ורוד","Cancel":"ביטול","Charges":"חיובים","Choose STL file":"בחירת קובץ STL","Choose another file":"בחירת קובץ אחר","Choose or drop an STL file":"בחירת קובץ STL או גרירה לכאן","Clear":"ניקוי","Coinbase, live":"Coinbase, חי","Couldn't read this file. %@ Export it as STL and try again.":"לא ניתן לקרוא את הקובץ. %@ יש לייצא אותו כ־STL ולנסות שוב.","Cream":"שמנת","Currency":"מטבע","Cushion side-stone ring":"טבעת קושן עם אבני צד","Cut direction":"כיוון חתך","Cut position":"מיקום חתך","Depth":"עומק","Done":"סיום","Download photo":"הורדת התמונה","Estimate":"הערכה","Estimate %@ to %@":"הערכה %@ עד %@","Exact amounts":"סכומים מדויקים","Exchange rate":"שער חליפין","Fewer details":"פחות פרטים","File units":"יחידות הקובץ","Finish":"גוון","Front":"חזית","Gloss":"מבריק","Gold":"זהב","Gold %@ / g":"זהב %@ לגרם","Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.":"הזהב מחושב לפי תכולת הזהב הטהור בלבד: מחיר ספוט מ־%@ ועוד הפרמיה שבהגדרות התמחור. שער החליפין הוא השער החי של Coinbase, עם ExchangeRate-API והבנק המרכזי האירופי כגיבוי.","Gold premium":"פרמיית זהב","Gold price":"מחיר הזהב","Gold spot":"ספוט זהב","Gold type":"סוג זהב","Gold updating…":"עדכון מחיר הזהב…","Gold — tap to retry":"זהב — הקשה לניסיון חוזר","Height":"גובה","Including %@ VAT":"כולל %@ מע״מ","Inspect full screen":"צפייה במסך מלא","Leave blank to use live prices.":"יש להשאיר ריק כדי להשתמש במחירים חיים.","Live prices.":"מחירים חיים.","Loading prices…":"טעינת מחירים…","Matte":"מט","Measure":"מדידה","Metal":"מתכת","More details":"פרטים נוספים","No estimate yet":"אין הערכה עדיין","No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.":"אין עדיין מחיר זהב או שער חליפין. יש לבדוק את החיבור ולהקיש על המחירים למעלה, או להזין מחירים בהגדרות התמחור.","No gold price yet. Tap the rates at the top to retry.":"אין עדיין מחיר זהב. אפשר להקיש על המחירים למעלה לניסיון חוזר.","No triangles found in this file.":"לא נמצאו משולשים בקובץ.","Off":"כבוי","Over estimate":"מעל ההערכה","Plating":"ציפוי","Price":"מחיר","Price breakdown":"פירוט המחיר","Price override":"מחיר ידני","Prices are from %@. Tap the rates at the top to refresh.":"עדכון אחרון של המחירים: %@. אפשר להקיש על המחירים למעלה לרענון.","Prices in US dollars":"מחירים בדולר ארה״ב","Pricing settings":"הגדרות תמחור","Printing":"הדפסה","Printing fee":"עמלת הדפסה","Pure gold":"זהב טהור","Pure gold %@/g (%@)":"זהב טהור %@/גרם (%@)","Quote range":"טווח הצעת המחיר","Raquel’s\nLittle Helper":"העוזרת הקטנה\nשל רקל","Rates":"שערים","Reading %@…":"קריאת %@…","Reset":"איפוס","Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?":"לאפס את הפרמיה, עמלת ההדפסה, המע״מ, טווח ההצעה, הצפיפויות והמחירים הידניים לברירת המחדל?","Reset to defaults":"איפוס לברירת המחדל","Rhodium plated":"ציפוי רודיום","Ring band, size 17":"טבעת חלקה, מידה 17","Rose":"אדום","STL file":"קובץ STL","STL file units":"יחידות קובץ STL","Sage":"מרווה","Section":"חתך","Share photo":"שיתוף התמונה","Side":"צד","Studio photo":"צילום סטודיו","Surface":"משטח","Tap the second point":"יש להקיש על הנקודה השנייה","Tap to refresh.":"הקשה לרענון.","Tap two points on the piece":"יש להקיש על שתי נקודות בתכשיט","That missed the piece. Tap on the model.":"ההקשה לא פגעה בתכשיט. יש להקיש על הדגם.","The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.":"הרשת אינה אטומה (%@), ולכן הנפח עלול להיות שגוי. יש לתקן אותה קודם בתוכנת ה־CAD או ה־slicer.","This browser can't show the 3D viewer.":"הדפדפן הזה לא יכול להציג את התצוגה התלת־ממדית.","This device can't show the 3D viewer.":"המכשיר הזה לא יכול להציג את התצוגה התלת־ממדית.","This doesn't look like an STL file.":"זה לא נראה כמו קובץ STL.","This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.":"הדגם גדול מ־12 ס״מ, וזה גדול לתכשיט. כדאי לבדוק את יחידות הקובץ בהגדרות התמחור.","This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.":"הדגם קטן מ־3 מ״מ. אם הוא יוצא בס״מ או באינצ׳ים, יש לשנות את יחידות הקובץ בהגדרות התמחור.","Tools":"כלים","Top":"מלמעלה","Under estimate":"מתחת להערכה","Unplated":"ללא ציפוי","Using your manual exchange rate from Pricing settings.":"נעשה שימוש בשער החליפין הידני מהגדרות התמחור.","Using your manual gold price and rate from Pricing settings.":"נעשה שימוש במחיר הזהב ובשער הידניים מהגדרות התמחור.","Using your manual gold price from Pricing settings.":"נעשה שימוש במחיר הזהב הידני מהגדרות התמחור.","VAT":"מע״מ","View":"תצוגה","Waiting for the gold price":"בהמתנה למחיר הזהב","Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.":"המשקל מוערך לפי נפח הדגם וצפיפות הסגסוגת. תעלות יציקה ופחת יציקה אינם כלולים.","White":"לבן","Width":"רוחב","Yellow":"צהוב","cm":"ס״מ","collapsed":"מכווץ","daily":"יומי","daily rate":"שער יומי","entered manually":"הוזן ידנית","example":"דוגמה","expanded":"מורחב","g":"גרם","g/cm³":"גרם/סמ״ק","inch":"אינץ׳","just now":"עכשיו","live":"חי","manual":"ידני","manual spot %@/oz":"ספוט ידני %@/אונקיה","mm":"מ״מ","mm³":"מ״מ³","of gold cost":"מעלות הזהב","pure gold":"זהב טהור","spot %@/g":"ספוט %@/גרם","spot %@/oz":"ספוט %@/אונקיה","today":"היום","volume":"נפח","weight":"משקל"},
+  ar: {"%@ h ago":"قبل %@ س","%@ min ago":"قبل %@ د","%@ must be a number from %@ to %@. Kept %@.":"يجب أن يكون %@ رقمًا من %@ إلى %@. تم الإبقاء على %@.","%@ must be from %@ to %@, or blank to use the live price.":"يجب أن يكون %@ من %@ إلى %@، أو فارغًا لاستخدام السعر المباشر.","%@ non-manifold edges":"%@ حواف غير متشعبة","%@ of %@":"%@ من %@","%@ of gold":"%@ من الذهب","%@ open edges":"%@ حواف مفتوحة","%@ pure × %@/g":"%@ خالص × %@/غ","%@ under, %@ over, rounded to %@":"%@ أقل، %@ أكثر، مقرّب إلى %@","14K density":"كثافة 14K","18K density":"كثافة 18K","3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset.":"نموذج ثلاثي الأبعاد. اسحب لتدويره في أي اتجاه، وقرّب إصبعيك أو باعدهما للتكبير، ولفّهما للإمالة، واضغط مرتين لإعادة الضبط.","3D preview. Tap to inspect full screen, drag sideways to rotate.":"معاينة ثلاثية الأبعاد. اضغط للعرض بملء الشاشة، واسحب جانبًا للتدوير.","3D viewer":"العارض ثلاثي الأبعاد","9K density":"كثافة 9K","Alloy density":"كثافة السبيكة","Backdrop":"الخلفية","Black":"أسود","Blue":"أزرق","Blush":"زهري","Cancel":"إلغاء","Charges":"الرسوم","Choose STL file":"اختر ملف STL","Choose another file":"اختر ملفًا آخر","Choose or drop an STL file":"اختر ملف STL أو أفلته هنا","Clear":"مسح","Coinbase, live":"Coinbase، مباشر","Couldn't read this file. %@ Export it as STL and try again.":"تعذّرت قراءة هذا الملف. %@ صدّره بصيغة STL وحاول مرة أخرى.","Cream":"كريمي","Currency":"العملة","Cushion side-stone ring":"خاتم كوشن بأحجار جانبية","Cut direction":"اتجاه القطع","Cut position":"موضع القطع","Depth":"العمق","Done":"تم","Download photo":"تنزيل الصورة","Estimate":"التقدير","Estimate %@ to %@":"التقدير من %@ إلى %@","Exact amounts":"المبالغ الدقيقة","Exchange rate":"سعر الصرف","Fewer details":"تفاصيل أقل","File units":"وحدات الملف","Finish":"اللون","Front":"أمام","Gloss":"لامع","Gold":"الذهب","Gold %@ / g":"الذهب %@ / غ","Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.":"يُحتسب الذهب على محتوى الذهب الخالص فقط: السعر الفوري من %@ مضافًا إليه العلاوة في إعدادات التسعير. سعر الصرف هو السعر المباشر من Coinbase، مع ExchangeRate-API والبنك المركزي الأوروبي كمصدرين احتياطيين.","Gold premium":"علاوة الذهب","Gold price":"سعر الذهب","Gold spot":"السعر الفوري للذهب","Gold type":"نوع الذهب","Gold updating…":"جارٍ تحديث الذهب…","Gold — tap to retry":"الذهب — اضغط لإعادة المحاولة","Height":"الارتفاع","Including %@ VAT":"شامل ضريبة %@","Inspect full screen":"عرض بملء الشاشة","Leave blank to use live prices.":"اتركه فارغًا لاستخدام الأسعار المباشرة.","Live prices.":"الأسعار المباشرة.","Loading prices…":"جارٍ تحميل الأسعار…","Matte":"مطفي","Measure":"قياس","Metal":"المعدن","More details":"مزيد من التفاصيل","No estimate yet":"لا يوجد تقدير بعد","No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.":"لا يوجد سعر للذهب أو سعر صرف بعد. تحقق من الاتصال واضغط على الأسعار في الأعلى، أو أدخل الأسعار في إعدادات التسعير.","No gold price yet. Tap the rates at the top to retry.":"لا يوجد سعر للذهب بعد. اضغط على الأسعار في الأعلى لإعادة المحاولة.","No triangles found in this file.":"لم يُعثر على مثلثات في هذا الملف.","Off":"إيقاف","Over estimate":"فوق التقدير","Plating":"الطلاء","Price":"السعر","Price breakdown":"تفصيل السعر","Price override":"سعر يدوي","Prices are from %@. Tap the rates at the top to refresh.":"آخر تحديث للأسعار: %@. اضغط على الأسعار في الأعلى للتحديث.","Prices in US dollars":"الأسعار بالدولار الأمريكي","Pricing settings":"إعدادات التسعير","Printing":"الطباعة","Printing fee":"رسوم الطباعة","Pure gold":"ذهب خالص","Pure gold %@/g (%@)":"الذهب الخالص %@/غ (%@)","Quote range":"نطاق عرض السعر","Raquel’s\nLittle Helper":"مساعدة راكيل\nالصغيرة","Rates":"الأسعار","Reading %@…":"جارٍ قراءة %@…","Reset":"إعادة تعيين","Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?":"إعادة العلاوة ورسوم الطباعة والضريبة ونطاق العرض والكثافات والأسعار اليدوية إلى الإعدادات الافتراضية؟","Reset to defaults":"استعادة الإعدادات الافتراضية","Rhodium plated":"مطلي بالروديوم","Ring band, size 17":"خاتم سادة، مقاس 17","Rose":"وردي","STL file":"ملف STL","STL file units":"وحدات ملف STL","Sage":"مريمي","Section":"مقطع","Share photo":"مشاركة الصورة","Side":"جانب","Studio photo":"صورة استوديو","Surface":"السطح","Tap the second point":"اضغط على النقطة الثانية","Tap to refresh.":"اضغط للتحديث.","Tap two points on the piece":"اضغط على نقطتين على القطعة","That missed the piece. Tap on the model.":"لم تُصب القطعة. اضغط على النموذج.","The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.":"الشبكة غير محكمة (%@)، لذا قد يكون الحجم غير دقيق. أصلحها أولًا في برنامج CAD أو برنامج التقطيع.","This browser can't show the 3D viewer.":"لا يمكن لهذا المتصفح عرض العارض ثلاثي الأبعاد.","This device can't show the 3D viewer.":"لا يمكن لهذا الجهاز عرض العارض ثلاثي الأبعاد.","This doesn't look like an STL file.":"لا يبدو هذا ملف STL.","This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.":"يزيد عرض هذا النموذج على 12 سم، وهو كبير بالنسبة للمجوهرات. تحقق من وحدات الملف في إعدادات التسعير.","This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.":"يقل عرض هذا النموذج عن 3 مم. إذا صُدّر بالسنتيمتر أو البوصة، فغيّر وحدات الملف في إعدادات التسعير.","Tools":"الأدوات","Top":"أعلى","Under estimate":"تحت التقدير","Unplated":"بدون طلاء","Using your manual exchange rate from Pricing settings.":"يُستخدم سعر الصرف اليدوي من إعدادات التسعير.","Using your manual gold price and rate from Pricing settings.":"يُستخدم سعر الذهب وسعر الصرف اليدويان من إعدادات التسعير.","Using your manual gold price from Pricing settings.":"يُستخدم سعر الذهب اليدوي من إعدادات التسعير.","VAT":"الضريبة","View":"عرض","Waiting for the gold price":"بانتظار سعر الذهب","Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.":"يُقدَّر الوزن من حجم النموذج وكثافة السبيكة. لا تشمل قنوات الصب وفاقد الصب.","White":"أبيض","Width":"العرض","Yellow":"أصفر","cm":"سم","collapsed":"مطوي","daily":"يومي","daily rate":"سعر يومي","entered manually":"أُدخل يدويًا","example":"مثال","expanded":"موسّع","g":"غ","g/cm³":"غ/سم³","inch":"بوصة","just now":"الآن","live":"مباشر","manual":"يدوي","manual spot %@/oz":"سعر فوري يدوي %@/أونصة","mm":"مم","mm³":"مم³","of gold cost":"من تكلفة الذهب","pure gold":"ذهب خالص","spot %@/g":"فوري %@/غ","spot %@/oz":"فوري %@/أونصة","today":"اليوم","volume":"الحجم","weight":"الوزن"},
+  ru: {"%@ h ago":"%@ ч назад","%@ min ago":"%@ мин назад","%@ must be a number from %@ to %@. Kept %@.":"%@: введите число от %@ до %@. Оставлено %@.","%@ must be from %@ to %@, or blank to use the live price.":"%@: от %@ до %@, или оставьте пустым для текущей цены.","%@ non-manifold edges":"%@ неманифолдных рёбер","%@ of %@":"%@ от %@","%@ of gold":"%@ от золота","%@ open edges":"%@ открытых рёбер","%@ pure × %@/g":"%@ чистого × %@/г","%@ under, %@ over, rounded to %@":"%@ ниже, %@ выше, с округлением до %@","14K density":"Плотность 14K","18K density":"Плотность 18K","3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset.":"3D-модель. Перетаскивайте, чтобы повернуть в любую сторону, сводите и разводите пальцы для масштаба, вращайте двумя пальцами, коснитесь дважды для сброса.","3D preview. Tap to inspect full screen, drag sideways to rotate.":"3D-просмотр. Нажмите, чтобы открыть на весь экран, проведите в сторону, чтобы повернуть.","3D viewer":"3D-просмотр","9K density":"Плотность 9K","Alloy density":"Плотность сплава","Backdrop":"Фон","Black":"Чёрный","Blue":"Синий","Blush":"Пудровый","Cancel":"Отмена","Charges":"Наценки","Choose STL file":"Выбрать файл STL","Choose another file":"Выбрать другой файл","Choose or drop an STL file":"Выбрать или перетащить файл STL","Clear":"Сбросить","Coinbase, live":"Coinbase, онлайн","Couldn't read this file. %@ Export it as STL and try again.":"Не удалось прочитать файл. %@ Экспортируйте его в STL и попробуйте снова.","Cream":"Кремовый","Currency":"Валюта","Cushion side-stone ring":"Кольцо кушон с боковыми камнями","Cut direction":"Направление разреза","Cut position":"Положение разреза","Depth":"Глубина","Done":"Готово","Download photo":"Скачать фото","Estimate":"Оценка","Estimate %@ to %@":"Оценка от %@ до %@","Exact amounts":"Точные суммы","Exchange rate":"Курс валюты","Fewer details":"Меньше подробностей","File units":"Единицы файла","Finish":"Цвет","Front":"Спереди","Gloss":"Глянец","Gold":"Золото","Gold %@ / g":"Золото %@ / г","Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.":"Золото считается только по содержанию чистого золота: спот-цена с %@ плюс надбавка из настроек цен. Курс — текущий курс Coinbase, с ExchangeRate-API и ЕЦБ в качестве запасных.","Gold premium":"Надбавка на золото","Gold price":"Цена золота","Gold spot":"Спот золота","Gold type":"Проба золота","Gold updating…":"Обновление цены…","Gold — tap to retry":"Золото — нажмите для повтора","Height":"Высота","Including %@ VAT":"Включая НДС %@","Inspect full screen":"Открыть на весь экран","Leave blank to use live prices.":"Оставьте пустым, чтобы использовать текущие цены.","Live prices.":"Текущие цены.","Loading prices…":"Загрузка цен…","Matte":"Матовая","Measure":"Измерить","Metal":"Металл","More details":"Подробнее","No estimate yet":"Оценки пока нет","No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.":"Пока нет цены золота или курса. Проверьте подключение и нажмите на курсы вверху или введите цены в настройках цен.","No gold price yet. Tap the rates at the top to retry.":"Цены золота пока нет. Нажмите на курсы вверху, чтобы повторить.","No triangles found in this file.":"В файле нет треугольников.","Off":"Выкл.","Over estimate":"Выше оценки","Plating":"Покрытие","Price":"Цена","Price breakdown":"Состав цены","Price override":"Ручные цены","Prices are from %@. Tap the rates at the top to refresh.":"Цены обновлены: %@. Нажмите на курсы вверху, чтобы обновить.","Prices in US dollars":"Цены в долларах США","Pricing settings":"Настройки цен","Printing":"Печать","Printing fee":"Стоимость печати","Pure gold":"Чистое золото","Pure gold %@/g (%@)":"Чистое золото %@/г (%@)","Quote range":"Диапазон цены","Raquel’s\nLittle Helper":"Маленькая помощница\nРакель","Rates":"Курсы","Reading %@…":"Чтение %@…","Reset":"Сбросить","Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?":"Сбросить надбавку, стоимость печати, НДС, диапазон, плотности и ручные цены к значениям по умолчанию?","Reset to defaults":"Сбросить настройки","Rhodium plated":"Родирование","Ring band, size 17":"Гладкое кольцо, размер 17","Rose":"Розовый","STL file":"Файл STL","STL file units":"Единицы файла STL","Sage":"Шалфей","Section":"Разрез","Share photo":"Поделиться фото","Side":"Сбоку","Studio photo":"Студийное фото","Surface":"Поверхность","Tap the second point":"Нажмите на вторую точку","Tap to refresh.":"Нажмите, чтобы обновить.","Tap two points on the piece":"Нажмите на две точки изделия","That missed the piece. Tap on the model.":"Мимо изделия. Нажмите на модель.","The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.":"Сетка не замкнута (%@), поэтому объём может быть неточным. Сначала исправьте её в CAD или слайсере.","This browser can't show the 3D viewer.":"Этот браузер не может показать 3D-просмотр.","This device can't show the 3D viewer.":"Это устройство не может показать 3D-просмотр.","This doesn't look like an STL file.":"Это не похоже на файл STL.","This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.":"Модель больше 12 см — это много для украшения. Проверьте единицы файла в настройках цен.","This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.":"Модель меньше 3 мм. Если она экспортирована в см или дюймах, измените единицы файла в настройках цен.","Tools":"Инструменты","Top":"Сверху","Under estimate":"Ниже оценки","Unplated":"Без покрытия","Using your manual exchange rate from Pricing settings.":"Используется ваш курс из настроек цен.","Using your manual gold price and rate from Pricing settings.":"Используются ваши цена золота и курс из настроек цен.","Using your manual gold price from Pricing settings.":"Используется ваша цена золота из настроек цен.","VAT":"НДС","View":"Вид","Waiting for the gold price":"Ждём цену золота","Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.":"Вес рассчитан по объёму модели и плотности сплава. Литники и потери при литье не учтены.","White":"Белый","Width":"Ширина","Yellow":"Жёлтый","cm":"см","collapsed":"свёрнуто","daily":"дневной","daily rate":"дневной курс","entered manually":"введено вручную","example":"пример","expanded":"развёрнуто","g":"г","g/cm³":"г/см³","inch":"дюйм","just now":"только что","live":"онлайн","manual":"вручную","manual spot %@/oz":"ручной спот %@/унц.","mm":"мм","mm³":"мм³","of gold cost":"от стоимости золота","pure gold":"чистое золото","spot %@/g":"спот %@/г","spot %@/oz":"спот %@/унц.","today":"сегодня","volume":"объём","weight":"вес"},
+  es: {"%@ h ago":"hace %@ h","%@ min ago":"hace %@ min","%@ must be a number from %@ to %@. Kept %@.":"%@ debe ser un número de %@ a %@. Se mantiene %@.","%@ must be from %@ to %@, or blank to use the live price.":"%@ debe estar entre %@ y %@, o vacío para usar el precio en vivo.","%@ non-manifold edges":"%@ aristas no manifold","%@ of %@":"%@ de %@","%@ of gold":"%@ del oro","%@ open edges":"%@ aristas abiertas","%@ pure × %@/g":"%@ puro × %@/g","%@ under, %@ over, rounded to %@":"%@ por debajo, %@ por encima, redondeado a %@","14K density":"Densidad 14K","18K density":"Densidad 18K","3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset.":"Modelo 3D. Arrastra para girarlo en cualquier dirección, pellizca para hacer zoom, gira dos dedos para rotarlo y toca dos veces para restablecer.","3D preview. Tap to inspect full screen, drag sideways to rotate.":"Vista 3D. Toca para verla a pantalla completa, desliza de lado para girarla.","3D viewer":"Visor 3D","9K density":"Densidad 9K","Alloy density":"Densidad de la aleación","Backdrop":"Fondo","Black":"Negro","Blue":"Azul","Blush":"Rosado","Cancel":"Cancelar","Charges":"Cargos","Choose STL file":"Elegir archivo STL","Choose another file":"Elegir otro archivo","Choose or drop an STL file":"Elegir o soltar un archivo STL","Clear":"Borrar","Coinbase, live":"Coinbase, en vivo","Couldn't read this file. %@ Export it as STL and try again.":"No se pudo leer este archivo. %@ Expórtalo como STL e inténtalo de nuevo.","Cream":"Crema","Currency":"Moneda","Cushion side-stone ring":"Anillo cojín con piedras laterales","Cut direction":"Dirección del corte","Cut position":"Posición del corte","Depth":"Profundidad","Done":"OK","Download photo":"Descargar foto","Estimate":"Estimación","Estimate %@ to %@":"Estimación de %@ a %@","Exact amounts":"Importes exactos","Exchange rate":"Tipo de cambio","Fewer details":"Menos detalles","File units":"Unidades del archivo","Finish":"Color","Front":"Frente","Gloss":"Brillante","Gold":"Oro","Gold %@ / g":"Oro %@ / g","Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.":"El oro se cobra solo por su contenido puro: precio spot de %@ más la prima de Ajustes de precios. El tipo de cambio es el de Coinbase en vivo, con ExchangeRate-API y el BCE como respaldo.","Gold premium":"Prima del oro","Gold price":"Precio del oro","Gold spot":"Oro spot","Gold type":"Tipo de oro","Gold updating…":"Actualizando oro…","Gold — tap to retry":"Oro — toca para reintentar","Height":"Altura","Including %@ VAT":"IVA del %@ incluido","Inspect full screen":"Ver a pantalla completa","Leave blank to use live prices.":"Déjalo vacío para usar precios en vivo.","Live prices.":"Precios en vivo.","Loading prices…":"Cargando precios…","Matte":"Mate","Measure":"Medir","Metal":"Metal","More details":"Más detalles","No estimate yet":"Aún no hay estimación","No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.":"Aún no hay precio del oro ni tipo de cambio. Comprueba la conexión y toca las tasas de arriba, o introduce precios en Ajustes de precios.","No gold price yet. Tap the rates at the top to retry.":"Aún no hay precio del oro. Toca las tasas de arriba para reintentar.","No triangles found in this file.":"No se encontraron triángulos en este archivo.","Off":"No","Over estimate":"Por encima","Plating":"Baño","Price":"Precio","Price breakdown":"Desglose del precio","Price override":"Precio manual","Prices are from %@. Tap the rates at the top to refresh.":"Precios actualizados: %@. Toca las tasas de arriba para actualizar.","Prices in US dollars":"Precios en dólares EE. UU.","Pricing settings":"Ajustes de precios","Printing":"Impresión","Printing fee":"Tarifa de impresión","Pure gold":"Oro puro","Pure gold %@/g (%@)":"Oro puro %@/g (%@)","Quote range":"Rango del presupuesto","Raquel’s\nLittle Helper":"La pequeña ayudante\nde Raquel","Rates":"Tasas","Reading %@…":"Leyendo %@…","Reset":"Restablecer","Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?":"¿Restablecer la prima, la tarifa de impresión, el IVA, el rango, las densidades y los precios manuales a los valores predeterminados?","Reset to defaults":"Restablecer valores","Rhodium plated":"Rodiado","Ring band, size 17":"Aro liso, talla 17","Rose":"Rosa","STL file":"Archivo STL","STL file units":"Unidades del archivo STL","Sage":"Salvia","Section":"Sección","Share photo":"Compartir foto","Side":"Lado","Studio photo":"Foto de estudio","Surface":"Superficie","Tap the second point":"Toca el segundo punto","Tap to refresh.":"Toca para actualizar.","Tap two points on the piece":"Toca dos puntos de la pieza","That missed the piece. Tap on the model.":"No has tocado la pieza. Toca el modelo.","The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.":"La malla no es estanca (%@), así que el volumen puede no ser exacto. Repárala antes en tu CAD o laminador.","This browser can't show the 3D viewer.":"Este navegador no puede mostrar el visor 3D.","This device can't show the 3D viewer.":"Este dispositivo no puede mostrar el visor 3D.","This doesn't look like an STL file.":"Esto no parece un archivo STL.","This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.":"Este modelo mide más de 12 cm, mucho para una joya. Revisa las unidades del archivo en Ajustes de precios.","This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.":"Este modelo mide menos de 3 mm. Si se exportó en cm o pulgadas, cambia las unidades del archivo en Ajustes de precios.","Tools":"Herramientas","Top":"Arriba","Under estimate":"Por debajo","Unplated":"Sin baño","Using your manual exchange rate from Pricing settings.":"Se usa tu tipo de cambio manual de Ajustes de precios.","Using your manual gold price and rate from Pricing settings.":"Se usan tu precio del oro y tipo de cambio manuales de Ajustes de precios.","Using your manual gold price from Pricing settings.":"Se usa tu precio del oro manual de Ajustes de precios.","VAT":"IVA","View":"Vista","Waiting for the gold price":"Esperando el precio del oro","Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.":"El peso se estima a partir del volumen del modelo y la densidad de la aleación. No incluye bebederos ni pérdidas de fundición.","White":"Blanco","Width":"Ancho","Yellow":"Amarillo","cm":"cm","collapsed":"contraído","daily":"diario","daily rate":"tipo diario","entered manually":"introducido a mano","example":"ejemplo","expanded":"expandido","g":"g","g/cm³":"g/cm³","inch":"pulg.","just now":"ahora mismo","live":"en vivo","manual":"manual","manual spot %@/oz":"spot manual %@/oz","mm":"mm","mm³":"mm³","of gold cost":"del coste del oro","pure gold":"oro puro","spot %@/g":"spot %@/g","spot %@/oz":"spot %@/oz","today":"hoy","volume":"volumen","weight":"peso"},
+  fr: {"%@ h ago":"il y a %@ h","%@ min ago":"il y a %@ min","%@ must be a number from %@ to %@. Kept %@.":"%@ doit être un nombre de %@ à %@. Valeur conservée : %@.","%@ must be from %@ to %@, or blank to use the live price.":"%@ doit être compris entre %@ et %@, ou vide pour utiliser le prix en direct.","%@ non-manifold edges":"%@ arêtes non manifold","%@ of %@":"%@ de %@","%@ of gold":"%@ de l’or","%@ open edges":"%@ arêtes ouvertes","%@ pure × %@/g":"%@ pur × %@/g","%@ under, %@ over, rounded to %@":"%@ en dessous, %@ au-dessus, arrondi à %@","14K density":"Densité 14K","18K density":"Densité 18K","3D model. Drag to turn it any way, pinch to zoom, twist to roll, double-tap to reset.":"Modèle 3D. Faites glisser pour le tourner dans tous les sens, pincez pour zoomer, tournez à deux doigts pour le pivoter, touchez deux fois pour réinitialiser.","3D preview. Tap to inspect full screen, drag sideways to rotate.":"Aperçu 3D. Touchez pour l’afficher en plein écran, glissez sur le côté pour le faire pivoter.","3D viewer":"Vue 3D","9K density":"Densité 9K","Alloy density":"Densité de l’alliage","Backdrop":"Fond","Black":"Noir","Blue":"Bleu","Blush":"Poudré","Cancel":"Annuler","Charges":"Frais","Choose STL file":"Choisir un fichier STL","Choose another file":"Choisir un autre fichier","Choose or drop an STL file":"Choisir ou déposer un fichier STL","Clear":"Effacer","Coinbase, live":"Coinbase, en direct","Couldn't read this file. %@ Export it as STL and try again.":"Impossible de lire ce fichier. %@ Exportez-le en STL et réessayez.","Cream":"Crème","Currency":"Devise","Cushion side-stone ring":"Bague coussin à pierres latérales","Cut direction":"Direction de coupe","Cut position":"Position de coupe","Depth":"Profondeur","Done":"OK","Download photo":"Télécharger la photo","Estimate":"Estimation","Estimate %@ to %@":"Estimation de %@ à %@","Exact amounts":"Montants exacts","Exchange rate":"Taux de change","Fewer details":"Moins de détails","File units":"Unités du fichier","Finish":"Couleur","Front":"Face","Gloss":"Brillant","Gold":"Or","Gold %@ / g":"Or %@ / g","Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.":"L’or est facturé uniquement sur sa teneur en or pur : cours spot de %@ plus la prime des Réglages des prix. Le taux de change est celui de Coinbase en direct, avec ExchangeRate-API et la BCE en secours.","Gold premium":"Prime sur l’or","Gold price":"Prix de l’or","Gold spot":"Or spot","Gold type":"Type d’or","Gold updating…":"Mise à jour de l’or…","Gold — tap to retry":"Or — touchez pour réessayer","Height":"Hauteur","Including %@ VAT":"TVA %@ incluse","Inspect full screen":"Afficher en plein écran","Leave blank to use live prices.":"Laissez vide pour utiliser les prix en direct.","Live prices.":"Prix en direct.","Loading prices…":"Chargement des prix…","Matte":"Mat","Measure":"Mesurer","Metal":"Métal","More details":"Plus de détails","No estimate yet":"Pas encore d’estimation","No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.":"Pas encore de prix de l’or ni de taux de change. Vérifiez la connexion et touchez les taux en haut, ou saisissez des prix dans Réglages des prix.","No gold price yet. Tap the rates at the top to retry.":"Pas encore de prix de l’or. Touchez les taux en haut pour réessayer.","No triangles found in this file.":"Aucun triangle trouvé dans ce fichier.","Off":"Non","Over estimate":"Au-dessus","Plating":"Placage","Price":"Prix","Price breakdown":"Détail du prix","Price override":"Prix manuel","Prices are from %@. Tap the rates at the top to refresh.":"Prix mis à jour : %@. Touchez les taux en haut pour actualiser.","Prices in US dollars":"Prix en dollars US","Pricing settings":"Réglages des prix","Printing":"Impression","Printing fee":"Frais d’impression","Pure gold":"Or pur","Pure gold %@/g (%@)":"Or pur %@/g (%@)","Quote range":"Fourchette du devis","Raquel’s\nLittle Helper":"La petite assistante\nde Raquel","Rates":"Taux","Reading %@…":"Lecture de %@…","Reset":"Réinitialiser","Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?":"Réinitialiser la prime, les frais d’impression, la TVA, la fourchette, les densités et les prix manuels aux valeurs par défaut ?","Reset to defaults":"Valeurs par défaut","Rhodium plated":"Rhodié","Ring band, size 17":"Anneau lisse, taille 17","Rose":"Rose","STL file":"Fichier STL","STL file units":"Unités du fichier STL","Sage":"Sauge","Section":"Coupe","Share photo":"Partager la photo","Side":"Côté","Studio photo":"Photo studio","Surface":"Surface","Tap the second point":"Touchez le deuxième point","Tap to refresh.":"Touchez pour actualiser.","Tap two points on the piece":"Touchez deux points de la pièce","That missed the piece. Tap on the model.":"Ce n’était pas sur la pièce. Touchez le modèle.","The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.":"Le maillage n’est pas étanche (%@), le volume peut donc être faux. Réparez-le d’abord dans votre CAO ou trancheur.","This browser can't show the 3D viewer.":"Ce navigateur ne peut pas afficher la vue 3D.","This device can't show the 3D viewer.":"Cet appareil ne peut pas afficher la vue 3D.","This doesn't look like an STL file.":"Ceci ne ressemble pas à un fichier STL.","This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.":"Ce modèle dépasse 12 cm, ce qui est grand pour un bijou. Vérifiez les unités du fichier dans Réglages des prix.","This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.":"Ce modèle fait moins de 3 mm. S’il a été exporté en cm ou en pouces, changez les unités du fichier dans Réglages des prix.","Tools":"Outils","Top":"Dessus","Under estimate":"En dessous","Unplated":"Non plaqué","Using your manual exchange rate from Pricing settings.":"Taux de change manuel des Réglages des prix utilisé.","Using your manual gold price and rate from Pricing settings.":"Prix de l’or et taux manuels des Réglages des prix utilisés.","Using your manual gold price from Pricing settings.":"Prix de l’or manuel des Réglages des prix utilisé.","VAT":"TVA","View":"Vue","Waiting for the gold price":"En attente du prix de l’or","Weight is estimated from the model's volume and the alloy density. Sprues and casting loss aren't included.":"Le poids est estimé à partir du volume du modèle et de la densité de l’alliage. Les tiges de coulée et les pertes à la fonte ne sont pas comprises.","White":"Blanc","Width":"Largeur","Yellow":"Jaune","cm":"cm","collapsed":"réduit","daily":"du jour","daily rate":"taux du jour","entered manually":"saisi manuellement","example":"exemple","expanded":"développé","g":"g","g/cm³":"g/cm³","inch":"pouce","just now":"à l’instant","live":"direct","manual":"manuel","manual spot %@/oz":"spot manuel %@/oz","mm":"mm","mm³":"mm³","of gold cost":"du coût de l’or","pure gold":"or pur","spot %@/g":"spot %@/g","spot %@/oz":"spot %@/oz","today":"aujourd’hui","volume":"volume","weight":"poids"},
+};
+// @strings-end
+</script>
+<script>
 // @pure-start
 const TROY_OZ_G = 31.1034768;
 const UNIT_TO_CM3 = { mm: 0.001, cm: 1, in: 16.387064 };
 const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4 };
 const FINENESS = { 9: 0.375, 14: 0.585, 18: 0.75 };
-const DEFAULTS = { premiumPct: 12, printPct: 5, vatPct: 18, rangeLo: 3.5, rangeHi: 3.5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "" };
+const DEFAULTS = { premiumPct: 12, printPct: 5, vatPct: 18, rangeLo: 3.5, rangeHi: 3.5, dens: { 9: 11.2, 14: 13.1, 18: 15.5 }, karat: 14, unit: "mm", goldOverride: "", fxOverride: "", currency: "ILS" };
+// The currency quotes are shown in. Gold is priced in dollars, so every other currency needs a USD rate;
+// fx is the range accepted for a manual rate (1 USD in this currency).
+const CURRENCIES = {
+  ILS: { sym: "₪", fx: [1, 10] },
+  USD: { sym: "$", fx: [1, 1] },
+  EUR: { sym: "€", fx: [0.3, 3] },
+  GBP: { sym: "£", fx: [0.3, 3] },
+  CAD: { sym: "CA$", fx: [0.5, 5] },
+  AUD: { sym: "A$", fx: [0.5, 5] },
+};
+
+// The example piece, packed by tools/pack_example.py from the app's example STL (every vertex bit for bit, so the
+// quote matches the app): "GQM1", vertex and triangle counts, the vertex bytes in 12 planes, then 3 varints per
+// triangle (0 = the next new vertex, k = the vertex k before it). Returns the same Float32Array as parseSTL.
+function readGQM(buf) {
+  const b = new Uint8Array(buf), dv = new DataView(buf);
+  if (b.length < 12 || String.fromCharCode(b[0], b[1], b[2], b[3]) !== "GQM1") throw new Error("Not a packed mesh");
+  const nv = dv.getUint32(4, true), n = dv.getUint32(8, true), vb = new Uint32Array(nv * 3), out = new Uint32Array(n * 9);
+  let o = 12;
+  for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++, o += nv) for (let i = 0; i < nv; i++) vb[i * 3 + k] |= b[o + i] << (8 * j);
+  for (let c = 0, seen = 0; c < n * 3; c++) {
+    let z = 0, s = 0, x;
+    do { x = b[o++]; z |= (x & 127) << s; s += 7; } while (x >= 128);
+    const v = z === 0 ? seen++ : seen - z;
+    if (!(v >= 0 && v < nv) || o > b.length) throw new Error("Damaged packed mesh");
+    out[c * 3] = vb[v * 3]; out[c * 3 + 1] = vb[v * 3 + 1]; out[c * 3 + 2] = vb[v * 3 + 2];
+  }
+  return new Float32Array(out.buffer);
+}
 
 // Returns a Float32Array of triangle vertices: 9 floats per triangle.
 function parseSTL(buf) {
@@ -781,11 +858,23 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   const fmt0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
   const fmt1 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const fmt3 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-  const ils = (v) => "₪" + fmt2.format(v);
-  const ils0 = (v) => "₪" + fmt0.format(v);
+
+  // ---------- language ----------
+  // Picked in <head>. Numbers stay in the en-US format in every language, as in the app; words and dates follow
+  // the language. t("Gold %@ / g", "₪590") fills each %@ in order.
+  const lang = document.documentElement.lang || "en";
+  const TABLE = (typeof STRINGS === "object" && STRINGS[lang]) || {};
+  const t = (key, ...args) => {
+    const s = Object.prototype.hasOwnProperty.call(TABLE, key) ? TABLE[key] : key;
+    let i = 0;
+    return args.length ? s.replace(/%(?:(\d+)\$)?@/g, (_, n) => String(args[n ? n - 1 : i++] ?? "")) : s;
+  };
+  // Keeps a run of numbers in left-to-right order inside Hebrew or Arabic text (the app's Fmt.ltr).
+  const ltr = (s) => "⁦" + s + "⁩";
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const usd = (v) => "$" + fmt2.format(v);
-  const grams = (v) => fmt2.format(v) + " g";
-  const fig = (num, unit) => num + "<small>" + unit + "</small>";
+  const grams = (v) => fmt2.format(v) + " " + t("g");
+  const fig = (num, unit) => esc(num) + "<small>" + esc(unit) + "</small>";
 
   // ---------- storage (optional; the page works without it) ----------
   const store = {
@@ -799,8 +888,12 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   const settings = { ...DEFAULTS, ...saved, dens: { ...DEFAULTS.dens, ...(saved.dens || {}) } };
   if (!FINENESS[settings.karat]) settings.karat = DEFAULTS.karat;
   if (!UNIT_TO_CM3[settings.unit]) settings.unit = DEFAULTS.unit;
+  if (!CURRENCIES[settings.currency]) settings.currency = DEFAULTS.currency;
   const prices = store.get("gq.prices") || {};
   const saveSettings = () => store.set("gq.settings", settings);
+  const cur = () => CURRENCIES[settings.currency];
+  const money = (v) => cur().sym + fmt2.format(v);
+  const money0 = (v) => cur().sym + fmt0.format(v);
 
   let mesh = null;
 
@@ -821,23 +914,30 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     return { oz: p, at: Date.parse(j.updatedAt) || Date.now() };
   }
   // Coinbase is fetched fresh on every call; the other two are once-a-day snapshots, used only if it fails.
+  // One call brings the dollar rate for every supported currency; a source must have the shekel to count.
+  const FX_CODES = Object.keys(CURRENCIES).filter((c) => c !== "USD");
+  const pickRates = (table) => {
+    const out = {};
+    FX_CODES.forEach((c) => { const v = Number(table && table[c]); if (v > 0) out[c] = v; });
+    return out;
+  };
   async function loadFx() {
     const sources = [
       async () => {
         const j = await getJSON("https://api.coinbase.com/v2/exchange-rates?currency=USD");
-        return { rate: Number(j && j.data && j.data.rates && j.data.rates.ILS), at: Date.now(), src: "live" };
+        return { rates: pickRates(j && j.data && j.data.rates), at: Date.now(), src: "live" };
       },
       async () => {
         const j = await getJSON("https://open.er-api.com/v6/latest/USD");
-        return { rate: Number(j && j.rates && j.rates.ILS), at: (j.time_last_update_unix || 0) * 1000 || Date.now(), src: "daily" };
+        return { rates: pickRates(j && j.rates), at: (j.time_last_update_unix || 0) * 1000 || Date.now(), src: "daily" };
       },
       async () => {
-        const j = await getJSON("https://api.frankfurter.dev/v1/latest?from=USD&to=ILS");
-        return { rate: Number(j && j.rates && j.rates.ILS), at: Date.parse(j.date) || Date.now(), src: "ECB" };
+        const j = await getJSON("https://api.frankfurter.dev/v1/latest?from=USD&to=" + FX_CODES.join(","));
+        return { rates: pickRates(j && j.rates), at: Date.parse(j.date) || Date.now(), src: "ECB" };
       },
     ];
     for (const s of sources) {
-      try { const r = await s(); if (r.rate > 0) return r; } catch {}
+      try { const r = await s(); if (r.rates.ILS > 0) return r; } catch {}
     }
     throw new Error("No exchange rate");
   }
@@ -849,7 +949,8 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     render();
     const [g, f] = await Promise.allSettled([loadGold(), loadFx()]);
     if (g.status === "fulfilled") { prices.goldOz = g.value.oz; prices.goldAt = g.value.at; prices.goldChecked = Date.now(); }
-    if (f.status === "fulfilled") { prices.fx = f.value.rate; prices.fxAt = f.value.at; prices.fxSrc = f.value.src; prices.fxChecked = Date.now(); }
+    // fx stays the shekel rate on its own, so prices saved by older versions of the page still load.
+    if (f.status === "fulfilled") { prices.fx = f.value.rates.ILS; prices.fxRates = f.value.rates; prices.fxAt = f.value.at; prices.fxSrc = f.value.src; prices.fxChecked = Date.now(); }
     prices.checkedAt = Date.now();
     prices.lastOk = g.status === "fulfilled" && f.status === "fulfilled";
     store.set("gq.prices", prices);
@@ -857,17 +958,21 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     render();
   }
 
+  const dayMonth = (ms) => {
+    try { return new Date(ms).toLocaleDateString(lang === "en" ? "en-GB" : lang, { day: "numeric", month: "short" }); }
+    catch { return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+  };
   function ago(ms) {
     const s = (Date.now() - ms) / 1000;
-    if (s < 60) return "just now";
-    if (s < 3600) return Math.round(s / 60) + " min ago";
-    if (s < 86400) return Math.round(s / 3600) + " h ago";
-    return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    if (s < 60) return t("just now");
+    if (s < 3600) return t("%@ min ago", Math.round(s / 60));
+    if (s < 86400) return t("%@ h ago", Math.round(s / 3600));
+    return dayMonth(ms);
   }
   function day(ms) {
     const d = new Date(ms), now = new Date();
-    if (d.toDateString() === now.toDateString()) return "today";
-    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    if (d.toDateString() === now.toDateString()) return t("today");
+    return dayMonth(ms);
   }
   // allowThousands: "4,072.10" means 4072.1 (gold $/oz). Otherwise a comma is a decimal point ("3,19" = 3.19).
   const parseNum = (s, allowThousands = false) => {
@@ -879,11 +984,81 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
     return Number.isFinite(v) ? v : null;
   };
   const goldOz = () => parseNum(settings.goldOverride, true) || prices.goldOz || null;
-  const usdIls = () => parseNum(settings.fxOverride) || prices.fx || null;
+  // A manual rate belongs to one currency (switching clears it); dollars need none.
+  const fxOverride = () => (settings.currency === "USD" ? null : parseNum(settings.fxOverride) || null);
+  // 1 USD in the quote currency.
+  const fxRate = () => {
+    const c = settings.currency;
+    if (c === "USD") return 1;
+    return fxOverride() || (prices.fxRates && prices.fxRates[c]) || (c === "ILS" ? prices.fx : null) || null;
+  };
 
   // ---------- preview ----------
+  // The page thumbnail is the same polished metal as the full-screen viewer, every triangle, in the karat and colour
+  // chosen there (as in the app). A browser without WebGL gets a flat-shaded gold sketch of up to 20,000 triangles.
   const cv = $("view");
-  const view = { n: 0, tri: null, yaw: -0.6, pitch: 0.62, rad: 1, raf: 0 };
+  const view = { n: 0, tri: null, yaw: -0.6, pitch: 0.62, rad: 1, raf: 0, gl: undefined, lost: false, loc: null, built: null };
+  function thumbGL() {
+    if (view.gl === undefined) {
+      view.gl = null;
+      let gl = null;
+      try { gl = cv.getContext("webgl", { antialias: true, alpha: true, depth: true }) || cv.getContext("experimental-webgl"); } catch {}
+      if (gl) {
+        try {
+          const prog = glProgram(gl, VS, FS, ["aPos", "aNrm"]);
+          gl.useProgram(prog);
+          view.loc = uniforms(gl, prog, ["uCenter", "uRot", "uScale", "uPan", "uDepth", "uClip", "uAlloy", "uCap", "uEnv", "uTint", "uFade", "uFloor", "uMirror"]);
+          gl.enable(gl.DEPTH_TEST);
+          gl.clearColor(0, 0, 0, 0);
+          gl.uniform3f(view.loc.uCap, 0.231, 0.224, 0.212);
+          view.pbuf = gl.createBuffer();
+          view.nbuf = gl.createBuffer();
+          view.built = null;
+          view.gl = gl;
+        } catch {}
+      }
+    }
+    return view.gl;
+  }
+  function thumbDraw() {
+    const gl = view.gl, L = view.loc;
+    if (view.lost) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3), W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;
+    const pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (!mesh || !mesh.smooth) return; // the normals arrive just after the numbers
+    if (view.built !== mesh) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, view.pbuf);
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.pos, gl.STATIC_DRAW);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, view.nbuf);
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.smooth, gl.STATIC_DRAW);
+      gl.vertexAttribPointer(1, 3, gl.BYTE, true, 4, 0);
+      gl.enableVertexAttribArray(1);
+      view.built = mesh;
+    }
+    const m = viewMatrix(qMul(qAxis(1, 0, 0, view.pitch), qAxis(0, 1, 0, view.yaw))), s = (0.44 * Math.min(W, H)) / mesh.rad;
+    gl.uniform3fv(L.uCenter, mesh.stats.center);
+    gl.uniformMatrix3fv(L.uRot, false, [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]]);
+    gl.uniform2f(L.uScale, (s * 2) / W, (s * 2) / H);
+    gl.uniform2f(L.uPan, 0, 0);
+    gl.uniform1f(L.uDepth, 1 / (mesh.rad * 1.01));
+    gl.uniform4f(L.uClip, 0, 0, 0, 1);
+    gl.uniform4fv(L.uAlloy, alloy());
+    gl.uniform4f(L.uEnv, 1, 1, 1, 1);
+    gl.uniform3f(L.uTint, 1, 1, 1);
+    gl.uniform2f(L.uFade, 0, 1);
+    gl.uniform4f(L.uFloor, 0, 1, 0, 0);
+    gl.uniform1f(L.uMirror, 0);
+    gl.frontFace(mesh.stats.signedVolume < 0 ? gl.CW : gl.CCW);
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.pos.length / 3);
+  }
+  cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); view.lost = true; });
+  cv.addEventListener("webglcontextrestored", () => { view.lost = false; view.gl = undefined; schedule(); });
   const PALETTE = Array.from({ length: 64 }, (_, i) => {
     const k = i / 63;
     const r = Math.min(255, Math.round(70 + 185 * k + 40 * k * k * k));
@@ -893,6 +1068,7 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   });
 
   function setPreview(pos, st) {
+    if (thumbGL()) return schedule();
     const n = st.tris;
     const stride = Math.max(1, Math.ceil(n / 20000));
     const t = new Float32Array(Math.ceil(n / stride) * 9);
@@ -922,6 +1098,7 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
 
   function draw() {
     view.raf = 0;
+    if (thumbGL()) return thumbDraw();
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const W = cv.clientWidth, H = cv.clientHeight;
     if (!W || !H) return;
@@ -929,6 +1106,7 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     }
     const ctx = cv.getContext("2d");
+    if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     if (!view.n) return;
@@ -1030,6 +1208,8 @@ function smoothNormals(pos, flip = false, creaseDeg = 35) {
   };
   // White with the Rhodium switch on: plating hides the alloy, so it is the same bright, faintly cool white at every karat.
   const RHODIUM = [0.9, 0.9, 0.92, 1.6];
+  // The quote's karat, so the colour she sees (here and in the page thumbnail) is the karat she quotes.
+  const alloy = () => (V.finish === "white" && V.rhodium ? RHODIUM : FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
   // Studio backdrops: a seamless sweep from `hi` (behind the piece) to `lo` (the edges). `tint` colours the tent walls
   // the metal reflects, the way a coloured sweep casts its colour into polish; `mirror` is a Gloss reflection's strength.
   const LOOKS = {
@@ -1236,20 +1416,15 @@ void main() {
 
   // The file's own vertices go to the GPU as they are, with smooth normals so reflections glide over curves.
   function glUpload() {
-    const gl = V.gl, pos = mesh.pos, [cx, cy, cz] = mesh.stats.center, flip = mesh.stats.signedVolume < 0;
-    let rad = 0;
-    for (let i = 0; i < pos.length; i += 3) {
-      const x = pos[i] - cx, y = pos[i + 1] - cy, z = pos[i + 2] - cz, d = x * x + y * y + z * z;
-      if (d > rad) rad = d;
-    }
+    const gl = V.gl, pos = mesh.pos, flip = mesh.stats.signedVolume < 0;
     V.pbuf = V.pbuf || gl.createBuffer();
     V.nbuf = V.nbuf || gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, V.pbuf);
     gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, V.nbuf);
-    gl.bufferData(gl.ARRAY_BUFFER, smoothNormals(pos, flip), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.smooth || (mesh.smooth = smoothNormals(pos, flip)), gl.STATIC_DRAW);
     meshAttribs();
-    V.built = mesh; V.count = pos.length / 3; V.rad = Math.sqrt(rad) || 1; V.flip = flip;
+    V.built = mesh; V.count = pos.length / 3; V.rad = mesh.rad; V.flip = flip;
   }
 
   // File → view rotation (row-major) and s = CSS px per file unit.
@@ -1287,7 +1462,7 @@ void main() {
     gl.uniform2fv(L.uScale, U.scale);
     gl.uniform2fv(L.uPan, U.pan);
     gl.uniform4fv(L.uClip, clip);
-    gl.uniform4fv(L.uAlloy, V.finish === "white" && V.rhodium ? RHODIUM : FINISH[V.finish][settings.karat] || FINISH[V.finish][14]);
+    gl.uniform4fv(L.uAlloy, alloy());
     gl.uniform4fv(L.uEnv, look && look.dark ? DARK_TENT : [1, 1, 1, 1]);
     gl.uniform3fv(L.uTint, look ? look.tint : [1, 1, 1]);
     gl.uniform4fv(L.uFloor, floor);
@@ -1535,8 +1710,8 @@ void main() {
     el.classList.toggle("has", n === 2);
     if (n === 2) {
       const [a, b] = V.pts;
-      el.innerHTML = fig(fmt2.format(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) * UNIT_TO_MM[settings.unit]), "mm");
-    } else el.textContent = V.miss ? "That missed the piece. Tap on the model." : n ? "Tap the second point" : "Tap two points on the piece";
+      el.innerHTML = fig(fmt2.format(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) * UNIT_TO_MM[settings.unit]), t("mm"));
+    } else el.textContent = t(V.miss ? "That missed the piece. Tap on the model." : n ? "Tap the second point" : "Tap two points on the piece");
   }
 
   // Gestures: one finger turns the piece freely in any direction (a trackball), two fingers pinch, pan and twist,
@@ -1631,6 +1806,7 @@ void main() {
     $("vPlate").hidden = f !== "white"; // plating is only offered for white
     document.querySelectorAll("#vPlate button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.p === (V.rhodium ? "rhodium" : "none"))));
     vSchedule();
+    schedule(); // the page thumbnail shows the same metal
   }
   // A cut removes the half of the piece facing the camera, so the cut face is in view.
   // Row 2 of the view matrix is the file-space direction to the camera.
@@ -1667,7 +1843,7 @@ void main() {
   // Studio: the camera turns the viewer into a photo set. The piece rests on a floor in front of a sweep in the
   // chosen colour, with a soft shadow (Matte) or a reflection (Gloss); she can still pose it, then share the photo.
   $("sLook").innerHTML = Object.entries(LOOKS)
-    .map(([id, L]) => `<button type="button" role="radio" data-bg="${id}" style="--hi:${L.hi};--lo:${L.lo}">${L.label}</button>`).join("");
+    .map(([id, L]) => `<button type="button" role="radio" data-bg="${id}" style="--hi:${L.hi};--lo:${L.lo}">${esc(t(L.label))}</button>`).join("");
   function setLook() {
     const L = LOOKS[V.look.bg], stage = glc.parentElement;
     if (V.studio) { stage.style.setProperty("--look-hi", L.hi); stage.style.setProperty("--look-lo", L.lo); }
@@ -1686,7 +1862,7 @@ void main() {
     $("pStudio").hidden = !on;
     if (on) ["View", "Section", "Metal"].forEach((t) => ($("p" + t).hidden = true));
     else setTab(V.tab);
-    $("sShare").textContent = canShareFiles() ? "Share photo" : "Download photo";
+    $("sShare").textContent = t(canShareFiles() ? "Share photo" : "Download photo");
     setLook();
   }
   // Studio has its own history entry, so Done, Esc and back step out of it before closing the viewer.
@@ -1752,13 +1928,14 @@ void main() {
     if (V.pts.length === 2) { // the reading, in the corner where it shows on screen
       const [a, b] = V.pts, mm = fmt2.format(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) * UNIT_TO_MM[settings.unit]);
       const font = v("--font"), big = 30 * k, small = 16 * k;
+      const unit = " " + t("mm");
       g.font = `300 ${big}px ${font}`; const wn = g.measureText(mm).width;
-      g.font = `400 ${small}px ${font}`; const wu = g.measureText(" mm").width;
+      g.font = `400 ${small}px ${font}`; const wu = g.measureText(unit).width;
       const x = 12 * k, y = 10 * k, pad = 14 * k, bh = 48 * k;
       g.fillStyle = "rgba(255, 255, 255, .9)"; g.beginPath(); if (g.roundRect) g.roundRect(x, y, wn + wu + pad * 2, bh, 12 * k); else g.rect(x, y, wn + wu + pad * 2, bh); g.fill();
       g.textBaseline = "alphabetic";
       g.fillStyle = v("--ink"); g.font = `300 ${big}px ${font}`; g.fillText(mm, x + pad, y + bh * 0.72);
-      g.fillStyle = v("--muted"); g.font = `400 ${small}px ${font}`; g.fillText(" mm", x + pad + wn, y + bh * 0.72);
+      g.fillStyle = v("--muted"); g.font = `400 ${small}px ${font}`; g.fillText(unit, x + pad + wn, y + bh * 0.72);
     }
     return out;
   }
@@ -1799,7 +1976,7 @@ void main() {
     if (V.viewFor !== mesh) resetViewer();
     const ok = !!V.gl || glSetup();
     $("vMsg").hidden = ok;
-    $("vMsg").textContent = ok ? "" : "This browser can't show the 3D viewer.";
+    $("vMsg").textContent = ok ? "" : t("This browser can't show the 3D viewer.");
     setTab(V.tab);
     setMeasure(V.measuring);
     try { history.pushState({ gqViewer: 1 }, ""); } catch {}
@@ -1844,22 +2021,34 @@ void main() {
 
   // ---------- mesh loading ----------
   function loadMesh(pos, name, example) {
-    const st = meshStats(pos);
-    mesh = { pos, name, example, stats: st, edges: null };
+    const st = meshStats(pos), [cx, cy, cz] = st.center;
+    let r2 = 0; // distance from the box center to the farthest vertex; the views fit this radius
+    for (let i = 0; i < pos.length; i += 3) {
+      const x = pos[i] - cx, y = pos[i + 1] - cy, z = pos[i + 2] - cz, d = x * x + y * y + z * z;
+      if (d > r2) r2 = d;
+    }
+    const m = (mesh = { pos, name, example, stats: st, edges: null, smooth: null, rad: Math.sqrt(r2) || 1 });
     $("fname").textContent = name;
     setPreview(pos, st);
     render();
     viewerMeshChanged();
+    // After the numbers are on screen: smooth normals for the polished thumbnail, then the watertight check.
     setTimeout(() => {
-      if (!mesh || mesh.pos !== pos || st.tris > 2000000) return;
-      mesh.edges = edgeCheck(pos);
-      render();
-    }, 40);
+      if (mesh !== m) return;
+      if (thumbGL() && !m.smooth) { m.smooth = smoothNormals(pos, st.signedVolume < 0); schedule(); }
+      setTimeout(() => {
+        if (mesh !== m || st.tris > 2000000) return;
+        m.edges = edgeCheck(pos);
+        render();
+      }, 40);
+    }, 0);
   }
 
+  let picked = false; // she has opened a file of her own, so the example mustn't replace it
   async function openFile(file) {
     if (!file) return;
-    $("fname").textContent = "Reading " + file.name + "…";
+    picked = true;
+    $("fname").textContent = t("Reading %@…", file.name);
     $("exTag").hidden = true;
     try {
       const buf = await file.arrayBuffer();
@@ -1872,7 +2061,27 @@ void main() {
       $("fname").textContent = file.name;
       render();
       viewerMeshChanged();
-      showWarn("Couldn't read this file. " + (err && err.message ? err.message : "") + " Export it as STL and try again.");
+      showWarn(t("Couldn't read this file. %@ Export it as STL and try again.", err && err.message ? t(err.message) : ""));
+    }
+  }
+
+  // The piece shown before she opens a file: the app's cushion ring with side stones, packed small for the web
+  // (example-ring.gqm.gz). Falls back to a plain band if it can't be fetched or unpacked.
+  async function loadExample() {
+    const name = t("Cushion side-stone ring");
+    if (!picked) $("fname").textContent = name;
+    try {
+      const r = await fetch("example-ring.gqm.gz");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      let buf = await r.arrayBuffer();
+      const b = new Uint8Array(buf, 0, 2);
+      if (b[0] === 0x1f && b[1] === 0x8b) { // still gzipped (served as a plain .gz file)
+        buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+      }
+      const pos = readGQM(buf);
+      if (!picked) loadMesh(pos, name, true);
+    } catch {
+      if (!picked) loadMesh(ringBand(), t("Ring band, size 17"), true);
     }
   }
   $("stl").addEventListener("change", (e) => { openFile(e.target.files[0]); e.target.value = ""; });
@@ -1887,58 +2096,69 @@ void main() {
     w.textContent = text || "";
   }
   const setText = (ids, text) => ids.forEach((id) => ($(id).textContent = text));
-  const setTotal = (text) => { $("qTotal").innerHTML = '<span class="cur">₪</span>' + text; };
+  const setTotal = (text) => { $("qTotal").innerHTML = '<span class="cur">' + esc(cur().sym) + "</span>" + text; };
 
   // ---------- render ----------
   const finePointer = !!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches);
   function render() {
-    const gOz = goldOz(), fx = usdIls();
-    const gOver = parseNum(settings.goldOverride, true), fOver = parseNum(settings.fxOverride);
+    const c = settings.currency, sym = cur().sym, isUsd = c === "USD";
+    const gOz = goldOz(), fx = fxRate();
+    const gOver = parseNum(settings.goldOverride, true), fOver = fxOverride();
     const spotG = gOz && fx ? (gOz / TROY_OZ_G) * fx : null;
     const chargedG = spotG ? spotG * (1 + settings.premiumPct / 100) : null;
     const isFresh = prices.lastOk && prices.checkedAt && Date.now() - prices.checkedAt < 30 * 60 * 1000;
+    const rateText = fx ? ltr("$1 = " + sym + fx.toFixed(3)) : null; // "$1 = ₪3.193"
 
-    // header: a dot per rate. green = live and checked in the last 30 min, grey = manual or daily rate, rust = old or missing
-    const recent = (t) => !!t && Date.now() - t < 30 * 60 * 1000;
+    // header: a dot per rate. green = live and checked in the last 30 min, grey = manual, daily rate or dollars, rust = old or missing
+    const recent = (ms) => !!ms && Date.now() - ms < 30 * 60 * 1000;
     $("goldDot").className = "dot " + (loading ? "busy" : gOver ? "" : gOz && recent(prices.goldChecked) ? "live" : "stale");
-    $("fxDot").className = "dot " + (loading ? "busy" : fOver ? "" : !fx || !recent(prices.fxChecked) ? "stale" : prices.fxSrc === "live" ? "live" : "");
-    $("fxTop").textContent = fx
-      ? "$1 = ₪" + fx.toFixed(3) + (fOver ? " manual" : prices.fxSrc && prices.fxSrc !== "live" ? " daily" : "")
-      : "$1 = ₪ —";
+    $("fxDot").className = "dot " + (loading ? "busy" : fOver || isUsd ? "" : !fx || !recent(prices.fxChecked) ? "stale" : prices.fxSrc === "live" ? "live" : "");
+    $("fxTop").textContent = isUsd ? t("Prices in US dollars")
+      : rateText ? rateText + (fOver ? " " + t("manual") : prices.fxSrc && prices.fxSrc !== "live" ? " " + t("daily") : "")
+      : ltr("$1 = " + sym + " —");
     $("goldTop").textContent = chargedG
-      ? "Gold " + ils0(chargedG) + " / g" + (gOver ? " manual" : "")
-      : loading ? "Gold updating…" : "Gold — tap to retry";
+      ? t("Gold %@ / g", money0(chargedG)) + (gOver ? " " + t("manual") : "")
+      : t(loading ? "Gold updating…" : "Gold — tap to retry");
+    $("refresh").setAttribute("aria-label", t("Live prices.") + " " + $("fxTop").textContent + ". " + $("goldTop").textContent + ". " + t("Tap to refresh."));
 
     // freshness warning under the total (hidden when all is well)
     const freshEl = $("qFresh");
-    if (gOver || fOver) freshEl.textContent = "Using your manual " + (gOver && fOver ? "gold price and rate" : gOver ? "gold price" : "exchange rate") + " from Pricing settings.";
-    else if (!spotG) freshEl.textContent = loading ? "" : "No gold price yet. Tap the rates at the top to retry.";
+    if (gOver || fOver) freshEl.textContent = t(gOver && fOver ? "Using your manual gold price and rate from Pricing settings." : gOver ? "Using your manual gold price from Pricing settings." : "Using your manual exchange rate from Pricing settings.");
+    else if (!spotG) freshEl.textContent = loading ? "" : t("No gold price yet. Tap the rates at the top to retry.");
     else if (isFresh || loading) freshEl.textContent = "";
-    else freshEl.textContent = "Prices are from " + ago(prices.checkedAt || prices.goldAt) + ". Tap the rates at the top to refresh.";
+    else freshEl.textContent = t("Prices are from %@. Tap the rates at the top to refresh.", ago(prices.checkedAt || prices.goldAt));
     freshEl.hidden = !freshEl.textContent;
 
     if (spotG) {
-      const fxNote = fOver ? " (manual)" : prices.fxSrc === "live" ? "" : prices.fxSrc === "ECB" ? " (ECB)" : " (daily rate)";
-      $("priceDetail").textContent =
-        "Pure gold " + ils(chargedG) + "/g (" + (gOver ? "manual " : "") + "spot $" + fmt0.format(gOz) + "/oz + " + settings.premiumPct + "%)\n" +
-        "$1 = ₪" + fx.toFixed(3) + fxNote;
+      const spot = t(gOver ? "manual spot %@/oz" : "spot %@/oz", "$" + fmt0.format(gOz)) + " + " + settings.premiumPct + "%";
+      const fxNote = fOver ? " (" + t("manual") + ")" : prices.fxSrc === "live" ? "" : prices.fxSrc === "ECB" ? " (ECB)" : " (" + t("daily rate") + ")";
+      $("priceDetail").textContent = t("Pure gold %@/g (%@)", money(chargedG), spot) + (isUsd ? "" : "\n" + rateText + fxNote);
     } else {
-      $("priceDetail").textContent = loading ? "Loading prices…" : "No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.";
+      $("priceDetail").textContent = t(loading ? "Loading prices…" : "No gold price or exchange rate yet. Check the connection and tap the rates at the top, or enter prices in Pricing settings.");
     }
 
     // toggles
     document.querySelectorAll("#units button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.u === settings.unit)));
     document.querySelectorAll("#karats button, #vKarats button").forEach((b) => b.setAttribute("aria-checked", String(+b.dataset.k === settings.karat)));
+    document.querySelectorAll("#currencies button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.c === c)));
+    // The manual exchange rate is for the chosen currency; dollars have none.
+    $("rowFx").hidden = isUsd;
+    $("rowGold").classList.toggle("end", isUsd);
+    $("lFx").textContent = "USD → " + c;
+    $("uFx").textContent = sym;
     if (V.open) vSchedule();
-    $("lVat").textContent = "VAT " + settings.vatPct + "%";
+    $("lVat").textContent = t("VAT") + " " + settings.vatPct + "%";
 
     // piece
     const real = !!mesh && !mesh.example;
     $("pick").className = "btn " + (real ? "btn-outline" : "btn-solid");
-    $("pickText").textContent = real ? "Choose another file" : finePointer ? "Choose or drop an STL file" : "Choose STL file";
+    $("pickText").textContent = t(real ? "Choose another file" : finePointer ? "Choose or drop an STL file" : "Choose STL file");
     $("exTag").hidden = !mesh || !mesh.example;
+    $("exTag").textContent = ", " + t("example");
+    $("volSub").textContent = t("volume");
+    $("weightSub").textContent = t("weight");
+    $("fineSub").textContent = t("pure gold");
     if (!mesh) {
-      $("volSub").textContent = "volume";
       setText(["dims", "vol", "weight", "fine", "qGold", "qPrint", "qVat", "qTotal2"], "—");
       $("qUsd").textContent = "";
       setTotal("—");
@@ -1947,49 +2167,48 @@ void main() {
     }
     const st = mesh.stats, u = settings.unit;
     const mm = st.size.map((d) => d * UNIT_TO_MM[u]);
-    $("dims").textContent = mm.map((d) => fmt1.format(d)).join(" × ") + " mm";
+    $("dims").textContent = ltr(mm.map((d) => fmt1.format(d)).join(" × ")) + " " + t("mm");
     const volumeCm3 = st.volume * UNIT_TO_CM3[u];
-    $("vol").innerHTML = fig(fmt0.format(volumeCm3 * 1000), "mm³");
-    $("volSub").textContent = "volume";
+    $("vol").innerHTML = fig(fmt0.format(volumeCm3 * 1000), t("mm³"));
 
     const warns = [];
     const maxMm = Math.max(...mm);
-    if (maxMm < 3) warns.push("This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings.");
-    else if (maxMm > 120) warns.push("This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings.");
+    if (maxMm < 3) warns.push(t("This model is under 3 mm across. If it was exported in cm or inches, change File units in Pricing settings."));
+    else if (maxMm > 120) warns.push(t("This model is over 12 cm across, which is large for jewelry. Check File units in Pricing settings."));
     if (mesh.edges && (mesh.edges.open || mesh.edges.nonManifold)) {
       const parts = [];
-      if (mesh.edges.open) parts.push(mesh.edges.open.toLocaleString("en-US") + " open edges");
-      if (mesh.edges.nonManifold) parts.push(mesh.edges.nonManifold.toLocaleString("en-US") + " non-manifold edges");
-      warns.push("The mesh isn't watertight (" + parts.join(", ") + "), so the volume may be off. Repair it in your CAD or slicer first.");
+      if (mesh.edges.open) parts.push(t("%@ open edges", fmt0.format(mesh.edges.open)));
+      if (mesh.edges.nonManifold) parts.push(t("%@ non-manifold edges", fmt0.format(mesh.edges.nonManifold)));
+      warns.push(t("The mesh isn't watertight (%@), so the volume may be off. Repair it in your CAD or slicer first.", parts.join(", ")));
     }
     showWarn(warns.join(" "));
 
     const k = settings.karat, density = settings.dens[k];
     const weight = volumeCm3 * density, fine = weight * FINENESS[k];
-    $("weight").innerHTML = fig(fmt2.format(weight), "g");
-    $("weightSub").textContent = "weight";
-    $("fine").innerHTML = fig(fmt2.format(fine), "g");
-    $("fineSub").textContent = "pure gold";
+    $("weight").innerHTML = fig(fmt2.format(weight), t("g"));
+    $("fine").innerHTML = fig(fmt2.format(fine), t("g"));
 
     const base = { volumeCm3, premiumPct: settings.premiumPct, printPct: settings.printPct, vatPct: settings.vatPct, goldUsdOz: gOz, usdIls: fx };
     if (!gOz || !fx) {
       setText(["qGold", "qPrint", "qVat", "qTotal2"], "—");
       setTotal("—");
-      $("qUsd").textContent = "Waiting for the gold price";
+      $("qUsd").textContent = t("Waiting for the gold price");
       $("detail").replaceChildren();
       return;
     }
+    // quote() names its rate usdIls, but it is the chosen currency's rate: every amount comes out in that currency.
     const q = quote({ ...base, karat: k, density });
     mesh.quote = q;
     const rg = priceRange(q.total, settings.rangeLo, settings.rangeHi);
     mesh.range = rg;
     setTotal(fmt0.format(rg.lo) + '<span class="dash">–</span>' + fmt0.format(rg.hi));
     $("qTotal").classList.toggle("long", rg.hi >= 10000);
-    $("qUsd").textContent = "Including " + settings.vatPct + "% VAT, ≈ $" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx);
-    showDetails(q, rg, { spotG, gOver, fOver, fx });
+    const vat = t("Including %@ VAT", settings.vatPct + "%");
+    $("qUsd").textContent = isUsd ? vat : vat + ", ≈ " + ltr("$" + fmt0.format(rg.lo / fx) + "–" + fmt0.format(rg.hi / fx));
+    showDetails(q, rg, { spotG, gOver, fOver, fx, rateText });
     const shown = wholeShekels([q.gold, q.printing, q.vat], q.total);
-    ["qGold", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = ils0(shown.parts[i])));
-    $("qTotal2").textContent = ils0(shown.total);
+    ["qGold", "qPrint", "qVat"].forEach((id, i) => ($(id).textContent = money0(shown.parts[i])));
+    $("qTotal2").textContent = money0(shown.total);
   }
 
   // ---------- controls ----------
@@ -2002,11 +2221,23 @@ void main() {
   const pickKarat = (e) => {
     const b = e.target.closest("[data-k]");
     if (!b) return;
-    settings.karat = +b.dataset.k; saveSettings(); render();
+    settings.karat = +b.dataset.k; saveSettings(); render(); schedule();
   };
   $("karats").addEventListener("click", pickKarat);
   $("vKarats").addEventListener("click", pickKarat);
   $("refresh").addEventListener("click", refreshPrices);
+  // A manual rate belongs to one currency, so switching clears it.
+  $("currencies").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-c]");
+    if (!b || b.dataset.c === settings.currency) return;
+    if (document.activeElement && document.activeElement.closest && document.activeElement.closest(".set-row")) document.activeElement.blur();
+    settings.currency = b.dataset.c;
+    settings.fxOverride = "";
+    saveSettings(); fillSettings(); fieldError($("sFx"), ""); render();
+    // Prices saved before the page had currencies only have the shekel rate; fetch the rest.
+    const c = settings.currency;
+    if (c !== "USD" && c !== "ILS" && !(prices.fxRates && prices.fxRates[c])) refreshPrices();
+  });
 
   const numFields = [
     ["sPremium", () => settings.premiumPct, (v) => (settings.premiumPct = v)],
@@ -2024,10 +2255,16 @@ void main() {
     $("sFx").value = settings.fxOverride || "";
   }
   // Saved only when she leaves the field ("change"), so a half-typed value never prices a quote.
+  // [low, high, name, unit]; the exchange-rate limits depend on the quote currency.
   const RANGES = {
     sPremium: [0, 50, "Gold premium", "%"], sPrint: [0, 50, "Printing fee", "%"],
     sVat: [0, 30, "VAT", "%"], sRangeLo: [0, 20, "Under estimate", "%"], sRangeHi: [0, 30, "Over estimate", "%"], sD9: [8, 25, "9K density", ""], sD14: [8, 25, "14K density", ""], sD18: [8, 25, "18K density", ""],
-    sGold: [500, 20000, "Gold price", " $/oz"], sFx: [1, 10, "USD → ILS", ""],
+    sGold: [500, 20000, "Gold price", " $/oz"],
+  };
+  const range = (id) => {
+    if (id === "sFx") { const [lo, hi] = cur().fx; return [lo, hi, "USD → " + settings.currency, ""]; }
+    const [lo, hi, name, unit] = RANGES[id];
+    return [lo, hi, t(name), unit];
   };
   function fieldError(input, msg) {
     const err = $("fieldErr");
@@ -2039,10 +2276,10 @@ void main() {
   }
   numFields.forEach(([id, get, set]) => {
     $(id).addEventListener("change", (e) => {
-      const [lo, hi, name, unit] = RANGES[id];
+      const [lo, hi, name, unit] = range(id);
       const v = parseNum(e.target.value);
       if (v === null || v < lo || v > hi) {
-        fieldError(e.target, name + " must be a number from " + lo + " to " + hi + unit + ". Kept " + get() + unit + ".");
+        fieldError(e.target, t("%@ must be a number from %@ to %@. Kept %@.", name, lo, hi + unit, get() + unit));
         e.target.value = get();
         return;
       }
@@ -2055,10 +2292,10 @@ void main() {
       const key = id === "sGold" ? "goldOverride" : "fxOverride";
       const raw = e.target.value.trim();
       if (raw === "") { settings[key] = ""; fieldError(e.target, ""); saveSettings(); render(); return; }
-      const [lo, hi, name, unit] = RANGES[id];
+      const [lo, hi, name, unit] = range(id);
       const v = parseNum(raw, id === "sGold");
       if (v === null || v < lo || v > hi) {
-        fieldError(e.target, name + " must be from " + lo + " to " + hi + unit + ", or blank to use the live price.");
+        fieldError(e.target, t("%@ must be from %@ to %@, or blank to use the live price.", name, lo, hi + unit));
         e.target.value = settings[key];
         return;
       }
@@ -2067,14 +2304,15 @@ void main() {
     });
   });
   $("reset").addEventListener("click", () => {
-    if (!confirm("Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?")) return;
-    Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit });
+    if (!confirm(t("Reset premium, printing fee, VAT, quote range, densities and manual prices to the defaults?"))) return;
+    // Keeps the chosen karat, file units and currency.
+    Object.assign(settings, { ...DEFAULTS, dens: { ...DEFAULTS.dens }, karat: settings.karat, unit: settings.unit, currency: settings.currency });
     saveSettings(); fillSettings(); fieldError($("sVat"), ""); render();
   });
 
   // ---------- more details ----------
-  // Every number behind the quote, exact to the agora.
-  function showDetails(q, rg, { spotG, gOver, fOver, fx }) {
+  // Every number behind the quote, exact to the cent.
+  function showDetails(q, rg, { spotG, gOver, fOver, fx, rateText }) {
     const row = (label, note, value, cls) => {
       const div = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd");
       if (cls) div.className = cls;
@@ -2092,26 +2330,52 @@ void main() {
       sec.append(h, dl);
       return sec;
     };
-    const fxNote = fOver ? "entered manually" : prices.fxSrc === "live" ? "Coinbase, live" : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : "daily rate, " + day(prices.fxAt);
+    const fxNote = fOver ? t("entered manually") : prices.fxSrc === "live" ? t("Coinbase, live") : prices.fxSrc === "ECB" ? "ECB, " + day(prices.fxAt) : t("daily rate") + ", " + day(prices.fxAt);
+    const rates = [
+      row(t("Gold spot"), gOver ? t("entered manually") : "gold-api.com" + (prices.goldAt ? ", " + ago(prices.goldAt) : ""), usd(goldOz()) + "/oz"),
+      row(t("Pure gold"), t("spot %@/g", money(spotG)) + " + " + settings.premiumPct + "%", money(q.goldIlsG) + "/" + t("g")),
+    ];
+    if (settings.currency !== "USD") rates.push(row(t("Exchange rate"), fxNote, rateText));
     $("detail").replaceChildren(
-      group("Exact amounts", [
-        row("Gold", grams(q.fine) + " pure × " + ils(q.goldIlsG) + "/g", ils(q.gold)),
-        row("Printing", settings.printPct + "% of gold", ils(q.printing)),
-        row("VAT", settings.vatPct + "% of " + ils(q.subtotal), ils(q.vat)),
-        row("Estimate", "", ils(q.total), "sum"),
-        row("Quote range", settings.rangeLo + "% under, " + settings.rangeHi + "% over, rounded to ₪" + rg.step, ils0(rg.lo) + "–" + fmt0.format(rg.hi)),
+      group(t("Exact amounts"), [
+        row(t("Gold"), t("%@ pure × %@/g", grams(q.fine), money(q.goldIlsG)), money(q.gold)),
+        row(t("Printing"), t("%@ of gold", settings.printPct + "%"), money(q.printing)),
+        row(t("VAT"), t("%@ of %@", settings.vatPct + "%", money(q.subtotal)), money(q.vat)),
+        row(t("Estimate"), "", money(q.total), "sum"),
+        row(t("Quote range"), t("%@ under, %@ over, rounded to %@", settings.rangeLo + "%", settings.rangeHi + "%", cur().sym + rg.step), ltr(money0(rg.lo) + "–" + fmt0.format(rg.hi))),
       ]),
-      group("Rates", [
-        row("Gold spot", gOver ? "entered manually" : "gold-api.com" + (prices.goldAt ? ", " + ago(prices.goldAt) : ""), usd(goldOz()) + "/oz"),
-        row("Pure gold", "spot " + ils(spotG) + "/g + " + settings.premiumPct + "%", ils(q.goldIlsG) + "/g"),
-        row("Exchange rate", fxNote, "$1 = ₪" + fx.toFixed(3)),
-      ]),
+      group(t("Rates"), rates),
     );
   }
 
+  // ---------- the page's own words in its language ----------
+  // The markup is English; any text, label or placeholder that is a key in the table is swapped for its translation.
+  function translatePage() {
+    const name = t("Raquel’s\nLittle Helper"), [l1, l2 = ""] = name.split("\n");
+    document.title = name.replace(/\s*\n\s*/, " ");
+    const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (meta) meta.content = document.title;
+    if (lang === "en") return;
+    document.querySelector(".wordmark").replaceChildren(l1, document.createElement("br"), " " + l2); // the laptop layout hides the break
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n; (n = walk.nextNode()); ) {
+      if (/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) continue;
+      const key = n.nodeValue.trim();
+      if (key && Object.prototype.hasOwnProperty.call(TABLE, key)) n.nodeValue = n.nodeValue.replace(key, TABLE[key]);
+    }
+    document.querySelectorAll("[aria-label]").forEach((el) => el.setAttribute("aria-label", t(el.getAttribute("aria-label"))));
+    document.querySelectorAll("[placeholder]").forEach((el) => (el.placeholder = t(el.placeholder)));
+    // The sources note keeps its link.
+    const p = $("sources"), link = p.querySelector("a");
+    const [before, after = ""] = t("Gold is charged on pure gold content only: spot from %@ plus the premium in Pricing settings. The exchange rate is Coinbase's live rate, with ExchangeRate-API and the ECB as backups.").split("%@");
+    p.replaceChildren(before, link, after);
+  }
+
   // ---------- start ----------
+  translatePage();
   fillSettings();
-  loadMesh(ringBand(), "Ring band, size 17", true);
+  render();
+  loadExample();
   refreshPrices();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && (!prices.checkedAt || Date.now() - prices.checkedAt > 10 * 60 * 1000)) refreshPrices();
